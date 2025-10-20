@@ -1,3 +1,9 @@
+
+# Za lako dodavanje stvari u gitignore upisi tehnologije koje koristis
+# u trazilicu na ovom linku:
+# https://www.toptal.com/developers/gitignore
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -5,6 +11,30 @@ __pycache__/
 
 # C extensions
 *.so
+
+### React
+
+# dependencies
+app/node_modules
+app/.pnp
+app/.pnp.js
+
+# testing
+app/coverage
+
+# production
+app/build
+
+# misc
+app/.DS_Store
+app/.env.local
+app/.env.development.local
+app/.env.test.local
+app/.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Distribution / packaging
 .Python
