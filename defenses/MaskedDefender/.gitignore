@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Training logs and temporary plots (not the final trained model)
+training_log_*.json
+*.log
+*.tmp
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+
+# Model cache from transformers (will be downloaded on first use)
+.cache/
+transformers_cache/
+
+# Don't ignore these - we want to keep them:
+# ✅ best_masked_defender_m5.pth (tracked with Git LFS)
+# ✅ training_history_m5.png (final training plot)
