@@ -10,7 +10,7 @@ function App() {
     const [selectedDefense, setSelectedDefense] = useState(defenses[0]);
     const [selectedModel, setSelectedModel] = useState(models[0]);
     const [message, setMessage] = useState('');
-    const [prompts] = useState<Array<{
+    const [prompts, setPrompts] = useState<Array<{
         text: string;
         timestamp: string;
     }>>([]);
@@ -34,6 +34,8 @@ function App() {
 
             const data = await response.json();
 
+            setPrompts(data);
+
             console.log("Odgovor backend-a:", data);
         } catch (error) {
             console.error("Greška prilikom slanja POST zahtjeva:", error);
@@ -46,7 +48,7 @@ function App() {
             handleSend();
         }
     };
-    return <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-5">
+    return <div className="flex justify-center items-center min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5">
         <div className="max-w-7xl mx-auto">
 
             {/* Configuration Grid */}
@@ -122,7 +124,7 @@ function App() {
                 </h2>
                 <div className="space-y-3 max-h-[200px] overflow-y-auto">
                     {prompts.length === 0 ?
-                        <div className="text-center text-purple-300 py-12">
+                        <div className="text-center text-white opacity-50 py-12">
                             <p>No prompts sent yet. Type a message below to get started.</p>
                         </div>
                         : prompts.map((prompt, index) =>
@@ -150,8 +152,8 @@ function App() {
             <div className="bg-white/10 h-1/6 backdrop-blur-lg rounded-xl p-6 border border-white/20">
                 <h2 className="text-xl font-semibold text-white mb-4">Send Prompt</h2>
                 <div className="flex gap-4">
-                    <textarea value={message} onChange={e => setMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder="Type your test prompt here..." className="flex-1 bg-white/5 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none" rows={1} />
-                    <button onClick={handleSend} disabled={!message.trim()} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 self-end">
+                    <textarea value={message} onChange={e => setMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder="Type your prompt here..." className="flex-1 bg-white/5 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white-50 focus:outline-none focus:ring-2 focus:ring-red-800 resize-none" rows={1} />
+                    <button onClick={handleSend} disabled={!message.trim()} className="bg-gradient-to-r from-green-500/50 to-green-500/80 hover:from-green-900 hover:to-green-900 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 self-end">
                         <Send size={20} />
                         Send
                     </button>
