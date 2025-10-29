@@ -10,20 +10,36 @@ function App() {
     const [selectedDefense, setSelectedDefense] = useState(defenses[0]);
     const [selectedModel, setSelectedModel] = useState(models[0]);
     const [message, setMessage] = useState('');
-    const [prompts, setPrompts] = useState<Array<{
+    const [prompts] = useState<Array<{
         text: string;
         timestamp: string;
     }>>([]);
-    const handleSend = () => {
-        if (message.trim()) {
-            const timestamp = new Date().toLocaleTimeString();
-            setPrompts([...prompts, {
-                text: message,
-                timestamp
-            }]);
-            setMessage('');
+
+    const handleSend = async () => {
+        if (!message.trim()) return;
+
+        try {
+            const response = await fetch("http://localhost:3000/api/prompt", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    prompt: message,
+                    attack: selectedAttack.id,
+                    defense: selectedDefense.id,
+                    model: selectedModel.id,
+                }),
+            });
+
+            const data = await response.json();
+
+            console.log("Odgovor backend-a:", data);
+        } catch (error) {
+            console.error("Greška prilikom slanja POST zahtjeva:", error);
         }
     };
+
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
