@@ -3,6 +3,8 @@
 # u trazilicu na ovom linku:
 # https://www.toptal.com/developers/gitignore
 
+.idea
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -17,6 +19,7 @@ models/
 ### React
 
 # dependencies
+node_modules
 app/node_modules
 app/.pnp
 app/.pnp.js
