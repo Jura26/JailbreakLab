@@ -1,2 +1,6 @@
 fastapi
 uvicorn[standard]
+pydantic
+transformers
+langchain-huggingface
+langchain-core
