@@ -46,8 +46,6 @@ async def _run_script_and_stream(cmd: list[str], env: dict | None = None) -> Asy
             yield line
         # wait for process to finish
         await proc.wait()
-        # optionally yield a final marker
-        yield b"\n[PROCESS ENDED]\n"
     except asyncio.CancelledError:
         # if client disconnects, try to terminate subprocess
         try:
@@ -59,10 +57,10 @@ async def _run_script_and_stream(cmd: list[str], env: dict | None = None) -> Asy
 @app.post("/api/prompt/stream")
 async def prompt_stream(request: PromptRequest):
     # Only run this if the attack matches
-    if request.attack != "role-playing-social-engeneering":
+    if (request.attack != "role-playing-social-engeneering" and request.attack != "chain-of-questions"):
         # return a single small stream
         async def just_return() -> AsyncGenerator[bytes, None]:
-            yield b"Not a role-playing attack. No script run.\n"
+            yield b"Not a prompt injection attack. No script run.\n"
         return StreamingResponse(just_return(), media_type="text/plain; charset=utf-8")
 
     # Build command using the same Python interpreter
@@ -70,7 +68,8 @@ async def prompt_stream(request: PromptRequest):
         sys.executable,
         "./attacks/promptInjection.py",
         "--model_id", request.model,
-        "--template", request.prompt
+        "--template", request.prompt,
+        "--prompt_type", request.attack
     ]
 
     # ensure python subprocess does not buffer output

@@ -12,6 +12,12 @@ const attacks: Attack[] = [
          "Assums a false identity or persona (forensics student) to interact with a target, with the goal of obtaining confidential information, influencing behavior, or gaining access to restricted systems or areas.",
    },
    {
+      id: "chain-of-questions",
+      name: "Chain of questions",
+      description:
+         "Asks a model a series of seemingly harmless or progressively reframed questions that together coax out sensitive, disallowed, or otherwise protected information.",
+   },
+   {
       id: "prompt-injection",
       name: "Prompt Injection",
       description:

@@ -115,7 +115,7 @@ function App() {
             if (!copy[newIndex]) return prev;
             copy[newIndex] = {
                ...copy[newIndex],
-               scriptOutput: localAccum + "\n[STREAM COMPLETED]",
+               scriptOutput: localAccum,
             };
             return copy;
          });
