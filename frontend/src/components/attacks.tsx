@@ -18,28 +18,10 @@ const attacks: Attack[] = [
          "Asks a model a series of seemingly harmless or progressively reframed questions that together coax out sensitive, disallowed, or otherwise protected information.",
    },
    {
-      id: "prompt-injection",
-      name: "Prompt Injection",
+      id: "fcb-bias_guided",
+      name: "Bias guided FCB",
       description:
-         "Attempts to override system instructions by injecting malicious prompts that change the model's behavior.",
-   },
-   {
-      id: "jailbreak",
-      name: "Jailbreak",
-      description:
-         "Tries to bypass safety filters and restrictions to make the model produce prohibited content.",
-   },
-   {
-      id: "data-extraction",
-      name: "Data Extraction",
-      description:
-         "Attempts to extract training data or sensitive information from the model's knowledge base.",
-   },
-   {
-      id: "adversarial",
-      name: "Adversarial Attack",
-      description:
-         "Uses carefully crafted inputs designed to cause the model to make mistakes or produce unexpected outputs.",
+         "Iteratively steers a language model’s outputs using controllable bias signals to optimize for specific behaviors, such as maximizing compliance or evading safety constraints.",
    },
 ];
 

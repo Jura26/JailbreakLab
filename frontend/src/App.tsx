@@ -32,6 +32,7 @@ interface Prompt {
    scriptOutput: string;
    progress?: number; // 0 to 100
    gpuInfo?: string;
+   isBlocked?: boolean; // Flag for blocked input
 }
 
 function App() {
@@ -76,6 +77,7 @@ function App() {
                   attack: selectedAttack.id,
                   defense: selectedDefense.id,
                   model: selectedModel.id,
+                  isBlocked: false,
                }),
             }
          );
@@ -100,6 +102,7 @@ function App() {
          let localAccum = "";
 
          let gpuCapturedForThisPrompt = false;
+         let blockedPrompt = false;
 
          while (!done) {
             const result = await reader.read();
@@ -112,6 +115,19 @@ function App() {
                   const trimmed = line.trim();
                   if (!trimmed) continue;
 
+                  if (!blockedPrompt && trimmed.startsWith("Blocked input")) {
+                     setPrompts((prev) => {
+                        const copy = [...prev];
+                        if (!copy[newIndex]) return prev;
+                        copy[newIndex] = {
+                           ...copy[newIndex],
+                           isBlocked: true,
+                        };
+                        return copy;
+                     });
+                     blockedPrompt = true;
+                     continue;
+                  }
                   // FIRST LINE GPU INFO (per prompt)
                   if (
                      !gpuCapturedForThisPrompt &&
@@ -372,7 +388,11 @@ function App() {
                            {prompt.progress !== undefined && (
                               <div className="w-full bg-white/20 rounded-full h-2 mt-2">
                                  <div
-                                    className="bg-green-400 h-2 rounded-full transition-all duration-200"
+                                    className={`h-2 rounded-full transition-all duration-200 ${
+                                       prompt.isBlocked
+                                          ? "bg-red-500" // RED when blocked
+                                          : "bg-green-400" // GREEN when not blocked
+                                    }`}
                                     style={{ width: `${prompt.progress}%` }}
                                  />
                               </div>

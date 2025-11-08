@@ -105,8 +105,8 @@ def main(model_id: str, template: str, print_output: bool):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Safe HF text-generation wrapper")
-    parser.add_argument("--model_id", type=str, default="distilgpt2", help="HF model id (e.g. distilgpt2)")
-    parser.add_argument("--template", type=str, required=False, default=None, help="Prompt template text")
+    parser.add_argument("--model_id", type=str, required=True)
+    parser.add_argument("--template", type=str, required=True)
     parser.add_argument("--template_file", type=str, required=False, default=None, help="Path to file with template (mutually exclusive with --template)")
     parser.add_argument("--prompt_type", required=True)
     args = parser.parse_args()

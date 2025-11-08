@@ -10,6 +10,12 @@ COPY requirements.txt .
 # Install Python dependencies (excluding torch, already in base image)
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Download only the stopwords corpus at build time
+RUN python -m nltk.downloader -d /usr/share/nltk_data stopwords
+
+# Make sure nltk can find the corpus
+ENV NLTK_DATA=/usr/share/nltk_data
+
 # Copy the rest of the backend code
 COPY . .
 

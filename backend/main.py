@@ -3,6 +3,7 @@ import os
 import sys
 import asyncio
 from typing import AsyncGenerator
+import unicodedata
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -78,7 +79,29 @@ async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | 
 
 @app.post("/api/prompt/stream")
 async def prompt_stream(request: PromptRequest):
-    # Only run this if the attack matches
+    # Defence
+    if(request.defense == "input_sanitization"):
+        suspicious_phrases = [
+            "ignore the above",
+            "ignore previous",
+            "ignore above",
+            "ignore all",
+            "disregard instructions",
+            "pretend you are",
+            "reveal",
+            "bypass safety",
+            "disable filter",
+        ]
+        #normalizira tekst tako da pretvara znakove u normalna slova i mice nevidljive znakove, npr. pretvori ígnoré u ignore, ali ign0re jos uvijek ostaje ign0re 
+        normalized = unicodedata.normalize("NFKC", request.prompt).lower()   
+        if any(p in normalized for p in suspicious_phrases):
+            # Return a streaming response that yields "Blocked input"
+            async def blocked_stream() -> AsyncGenerator[bytes, None]:
+                yield b"Blocked input\n"
+            return StreamingResponse(blocked_stream(), media_type="text/plain; charset=utf-8")
+
+
+    # Attack
     if (request.attack == "role-playing-social-engeneering" or request.attack == "chain-of-questions"):
         # Build command using the same Python interpreter
         cmd = [
@@ -99,8 +122,22 @@ async def prompt_stream(request: PromptRequest):
         # StreamingResponse sends bytes to the client as they are yielded
         return StreamingResponse(generator, media_type="text/plain; charset=utf-8")
 
+    if (request.attack == "fcb-bias_guided"):
+        # Build command using the same Python interpreter
+        cmd = [
+            sys.executable,
+            "./attacks/FCB.py",
+            "--model_id", request.model,
+            "--template", request.prompt
+        ]
+        # ensure python subprocess does not buffer output
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "1"
+        generator = _run_script_and_stream(cmd, env=env, numOfPrompts=1)
+        # StreamingResponse sends bytes to the client as they are yielded
+        return StreamingResponse(generator, media_type="text/plain; charset=utf-8")
 
     # return a single small stream
     async def just_return() -> AsyncGenerator[bytes, None]:
-        yield b"Not a prompt injection attack. No script run.\n"
+        yield b"No script run.\n"
     return StreamingResponse(just_return(), media_type="text/plain; charset=utf-8")
