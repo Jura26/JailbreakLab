@@ -30,6 +30,8 @@ interface Prompt {
    defense: Defense;
    model: Model;
    scriptOutput: string;
+   progress?: number; // 0 to 100
+   gpuInfo?: string;
 }
 
 function App() {
@@ -43,9 +45,8 @@ function App() {
       if (!message.trim()) return;
 
       const currentMessage = message;
-      setMessage(""); // clear input
+      setMessage("");
 
-      // create prompt entry in state
       let newIndex: number;
       setPrompts((prev) => {
          newIndex = prev.length;
@@ -58,6 +59,8 @@ function App() {
                defense: selectedDefense,
                model: selectedModel,
                scriptOutput: "",
+               progress: 0,
+               gpuInfo: "",
             },
          ];
       });
@@ -81,7 +84,11 @@ function App() {
             const text = await response.text();
             setPrompts((prev) => {
                const copy = [...prev];
-               copy[newIndex] = { ...copy[newIndex], scriptOutput: text };
+               copy[newIndex] = {
+                  ...copy[newIndex],
+                  scriptOutput: text,
+                  progress: 100,
+               };
                return copy;
             });
             return;
@@ -92,31 +99,76 @@ function App() {
          let done = false;
          let localAccum = "";
 
+         let gpuCapturedForThisPrompt = false;
+
          while (!done) {
             const result = await reader.read();
             done = !!result.done;
             if (result.value) {
-               const chunk = decoder.decode(result.value, { stream: true });
-               localAccum += chunk;
-               setPrompts((prev) => {
-                  const copy = [...prev];
-                  if (!copy[newIndex]) return prev;
-                  copy[newIndex] = {
-                     ...copy[newIndex],
-                     scriptOutput: localAccum,
-                  };
-                  return copy;
-               });
+               const text = decoder.decode(result.value, { stream: true });
+               const lines = text.split("\n");
+
+               for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (!trimmed) continue;
+
+                  // FIRST LINE GPU INFO (per prompt)
+                  if (
+                     !gpuCapturedForThisPrompt &&
+                     (trimmed.startsWith("No compatible GPU") ||
+                        trimmed.startsWith("GPU name:"))
+                  ) {
+                     setPrompts((prev) => {
+                        const copy = [...prev];
+                        if (!copy[newIndex]) return prev;
+                        copy[newIndex] = {
+                           ...copy[newIndex],
+                           gpuInfo: trimmed,
+                        };
+                        return copy;
+                     });
+                     gpuCapturedForThisPrompt = true;
+                     continue; // don’t add to scriptOutput
+                  }
+
+                  // Progress update
+                  if (trimmed.startsWith("[PROGRESS]")) {
+                     const percent = parseFloat(
+                        trimmed.replace("[PROGRESS]", "").trim()
+                     );
+                     if (!isNaN(percent)) {
+                        setPrompts((prev) => {
+                           const copy = [...prev];
+                           if (!copy[newIndex]) return prev;
+                           copy[newIndex] = {
+                              ...copy[newIndex],
+                              progress: percent,
+                           };
+                           return copy;
+                        });
+                     }
+                  } else {
+                     // Normal output
+                     localAccum += line + "\n";
+                     setPrompts((prev) => {
+                        const copy = [...prev];
+                        if (!copy[newIndex]) return prev;
+                        copy[newIndex] = {
+                           ...copy[newIndex],
+                           scriptOutput: localAccum,
+                        };
+                        return copy;
+                     });
+                  }
+               }
             }
          }
 
+         // finalize progress
          setPrompts((prev) => {
             const copy = [...prev];
             if (!copy[newIndex]) return prev;
-            copy[newIndex] = {
-               ...copy[newIndex],
-               scriptOutput: localAccum,
-            };
+            copy[newIndex] = { ...copy[newIndex], progress: 100 };
             return copy;
          });
       } catch (err) {
@@ -127,6 +179,7 @@ function App() {
             copy[newIndex] = {
                ...copy[newIndex],
                scriptOutput: `Error: ${String(err)}`,
+               progress: 0,
             };
             return copy;
          });
@@ -145,14 +198,15 @@ function App() {
          <div className="max-w-7xl mx-auto">
             {/* Configuration Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-               {/* Attack Selection */}
+               {/* Attack */}
                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
                      <Sword className="text-red-400" size={24} />
                      <h2 className="text-xl font-semibold text-white">
                         Attack Type
                      </h2>
                   </div>
+
                   <select
                      value={selectedAttack.id}
                      onChange={(e) =>
@@ -173,6 +227,7 @@ function App() {
                         </option>
                      ))}
                   </select>
+
                   <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
                      <div className="flex items-start gap-2">
                         <Info
@@ -186,7 +241,7 @@ function App() {
                   </div>
                </div>
 
-               {/* Defense Selection */}
+               {/* Defense */}
                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
                   <div className="flex items-center gap-2 mb-4">
                      <Shield className="text-green-400" size={24} />
@@ -227,7 +282,7 @@ function App() {
                   </div>
                </div>
 
-               {/* Model Selection */}
+               {/* Model */}
                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
                   <div className="flex items-center gap-2 mb-4">
                      <Brain className="text-blue-400" size={24} />
@@ -267,7 +322,7 @@ function App() {
                </div>
             </div>
 
-            {/* Prompt Display Area */}
+            {/* Prompt Display */}
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 mb-6 h-[300px] overflow-y-auto">
                <h2 className="text-xl font-semibold text-white mb-4">
                   Prompt History
@@ -290,7 +345,13 @@ function App() {
                               <span className="text-xs text-purple-300">
                                  {prompt.timestamp}
                               </span>
-                              <div className="flex gap-2 text-xs">
+                              <div className="flex gap-2 text-xs items-center">
+                                 {/* GPU info inline */}
+                                 {prompt.gpuInfo && (
+                                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded">
+                                       {prompt.gpuInfo}
+                                    </span>
+                                 )}
                                  <span className="px-2 py-1 bg-red-500/20 text-red-300 rounded">
                                     {prompt.attack.name}
                                  </span>
@@ -302,9 +363,21 @@ function App() {
                                  </span>
                               </div>
                            </div>
+
                            <p className="text-white wrap-break-word">
                               {prompt.text}
                            </p>
+
+                           {/* Progress Bar */}
+                           {prompt.progress !== undefined && (
+                              <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                                 <div
+                                    className="bg-green-400 h-2 rounded-full transition-all duration-200"
+                                    style={{ width: `${prompt.progress}%` }}
+                                 />
+                              </div>
+                           )}
+
                            {prompt.scriptOutput && (
                               <pre className="text-green-300 text-sm mt-2 whitespace-pre-wrap">
                                  {prompt.scriptOutput}
@@ -316,7 +389,7 @@ function App() {
                </div>
             </div>
 
-            {/* Message Input Area */}
+            {/* Input */}
             <div className="bg-white/10 h-1/6 backdrop-blur-lg rounded-xl p-6 border border-white/20">
                <h2 className="text-xl font-semibold text-white mb-4">
                   Send Prompt

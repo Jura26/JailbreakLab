@@ -25,29 +25,51 @@ class PromptRequest(BaseModel):
     model: str
 
 # helper: async generator that runs the script and yields chunks of stdout
-async def _run_script_and_stream(cmd: list[str], env: dict | None = None) -> AsyncGenerator[bytes, None]:
-    # start subprocess
+async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | None = None) -> AsyncGenerator[bytes, None]:
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
         env=env,
-        # no shell
     )
 
     assert proc.stdout is not None
-    # read line-by-line (or chunk-by-chunk) while process runs
+
     try:
+        currPrompt = 0
         while True:
             line = await proc.stdout.readline()
             if not line:  # EOF
                 break
-            # yield raw bytes to StreamingResponse
-            yield line
-        # wait for process to finish
+
+            # decode bytes to string
+            decoded = line.decode("utf-8", errors="ignore").strip()
+
+            if decoded.startswith("[PROGRESS] "):
+                try:
+                    # extract the number after [PROGRESS]
+                    progress_val = float(decoded[len("[PROGRESS] "):].strip())
+
+                    # normalize if multiple prompts
+                    absolute_progress = currPrompt * 100 / numOfPrompts + progress_val / numOfPrompts
+
+                    if(progress_val >= 99.99):
+                        currPrompt += 1
+                    
+                    # reformat as string
+                    new_line = f"[PROGRESS] {absolute_progress:.2f}\n"
+                    # convert back to bytes for StreamingResponse
+                    yield new_line.encode("utf-8")
+                except ValueError:
+                    # if parse fails, just forward original line
+                    yield line
+            else:
+                # send original stdout lines
+                yield line
+
         await proc.wait()
+
     except asyncio.CancelledError:
-        # if client disconnects, try to terminate subprocess
         try:
             proc.terminate()
         except Exception:
@@ -57,25 +79,28 @@ async def _run_script_and_stream(cmd: list[str], env: dict | None = None) -> Asy
 @app.post("/api/prompt/stream")
 async def prompt_stream(request: PromptRequest):
     # Only run this if the attack matches
-    if (request.attack != "role-playing-social-engeneering" and request.attack != "chain-of-questions"):
-        # return a single small stream
-        async def just_return() -> AsyncGenerator[bytes, None]:
-            yield b"Not a prompt injection attack. No script run.\n"
-        return StreamingResponse(just_return(), media_type="text/plain; charset=utf-8")
+    if (request.attack == "role-playing-social-engeneering" or request.attack == "chain-of-questions"):
+        # Build command using the same Python interpreter
+        cmd = [
+            sys.executable,
+            "./attacks/promptInjection.py",
+            "--model_id", request.model,
+            "--template", request.prompt,
+            "--prompt_type", request.attack
+        ]
 
-    # Build command using the same Python interpreter
-    cmd = [
-        sys.executable,
-        "./attacks/promptInjection.py",
-        "--model_id", request.model,
-        "--template", request.prompt,
-        "--prompt_type", request.attack
-    ]
+        # ensure python subprocess does not buffer output
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "1"
+        numOfPrompts = 1
+        if (request.attack == "chain-of-questions"):
+            numOfPrompts = 9
+        generator = _run_script_and_stream(cmd, env=env, numOfPrompts=numOfPrompts)
+        # StreamingResponse sends bytes to the client as they are yielded
+        return StreamingResponse(generator, media_type="text/plain; charset=utf-8")
 
-    # ensure python subprocess does not buffer output
-    env = os.environ.copy()
-    env["PYTHONUNBUFFERED"] = "1"
 
-    generator = _run_script_and_stream(cmd, env=env)
-    # StreamingResponse sends bytes to the client as they are yielded
-    return StreamingResponse(generator, media_type="text/plain; charset=utf-8")
+    # return a single small stream
+    async def just_return() -> AsyncGenerator[bytes, None]:
+        yield b"Not a prompt injection attack. No script run.\n"
+    return StreamingResponse(just_return(), media_type="text/plain; charset=utf-8")
