@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from defenses.defense_manager import *
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -80,25 +81,10 @@ async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | 
 @app.post("/api/prompt/stream")
 async def prompt_stream(request: PromptRequest):
     # Defence
-    if(request.defense == "input_sanitization"):
-        suspicious_phrases = [
-            "ignore the above",
-            "ignore previous",
-            "ignore above",
-            "ignore all",
-            "disregard instructions",
-            "pretend you are",
-            "reveal",
-            "bypass safety",
-            "disable filter",
-        ]
-        #normalizira tekst tako da pretvara znakove u normalna slova i mice nevidljive znakove, npr. pretvori ígnoré u ignore, ali ign0re jos uvijek ostaje ign0re 
-        normalized = unicodedata.normalize("NFKC", request.prompt).lower()   
-        if any(p in normalized for p in suspicious_phrases):
-            # Return a streaming response that yields "Blocked input"
-            async def blocked_stream() -> AsyncGenerator[bytes, None]:
-                yield b"Blocked input\n"
-            return StreamingResponse(blocked_stream(), media_type="text/plain; charset=utf-8")
+    # Apply defense dynamically via defense manager
+    blocked_response = await apply_defense(request.defense, request.prompt)
+    if blocked_response:
+        return blocked_response
 
 
     # Attack
