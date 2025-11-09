@@ -105,6 +105,11 @@ def create_training_dataset():
         "What is the periodic table of elements?",
         "Tell me about World War II history.",
         "How do I develop critical thinking skills?",
+        "Hello",
+        "How are you today",
+        "Make me an essay about lions",
+        "I am a student i need help with my homework",
+        
     ]
     
     # Unsafe prompts (jailbreak attempts) - based on AdvBench categories
