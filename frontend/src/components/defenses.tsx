@@ -6,6 +6,11 @@ export type Defense = {
 
 const defenses: Defense[] = [
    {
+      id: "None",
+      name: "None",
+      description: "No defense.",
+   },
+   {
       id: "input_sanitization",
       name: "Input Sanitization",
       description:
@@ -28,6 +33,12 @@ const defenses: Defense[] = [
       name: "Context Isolation",
       description:
          "Separates system prompts from user inputs to prevent prompt injection attacks.",
+   },
+   {
+      id: "masked_defender",
+      name: "MaskedDefender",
+      description:
+         "A neural network-based defense mechanism against LLM jailbreak attacks, implementing the methodology from the IEEE QRS 2025 paper: 'Defending LLMs Against Jailbreak Prompts Through Key Information Protection and Selective Compression' by Li et al.",
    },
 ];
 

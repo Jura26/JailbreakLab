@@ -1,6 +1,7 @@
 # main.py
 import os
 import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 from typing import AsyncGenerator
 import unicodedata
@@ -26,6 +27,19 @@ class PromptRequest(BaseModel):
     defense: str
     model: str
 
+# Registry for prompt-injection attack scripts and metadata
+PROMPT_INJECTION_ATTACKS = {
+    "role-playing-social-engeneering": {
+        "num_prompts": 1,
+    },
+    "chain-of-questions": {
+        "num_prompts": 9,
+    },
+    "DAN": {
+        "num_prompts": 2,
+    },
+}
+
 # helper: async generator that runs the script and yields chunks of stdout
 async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | None = None) -> AsyncGenerator[bytes, None]:
     proc = await asyncio.create_subprocess_exec(
@@ -39,6 +53,9 @@ async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | 
 
     try:
         currPrompt = 0
+        # track last yielded absolute progress so we never go backwards
+        last_yielded_progress = -1.0
+
         while True:
             line = await proc.stdout.readline()
             if not line:  # EOF
@@ -52,16 +69,24 @@ async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | 
                     # extract the number after [PROGRESS]
                     progress_val = float(decoded[len("[PROGRESS] "):].strip())
 
-                    # normalize if multiple prompts
-                    absolute_progress = currPrompt * 100 / numOfPrompts + progress_val / numOfPrompts
+                    # normalize if multiple prompts (weighted per-prompt progress)
+                    absolute_progress = currPrompt * 100.0 / numOfPrompts + progress_val / numOfPrompts
 
-                    if(progress_val >= 99.99):
-                        currPrompt += 1
-                    
+                    # ensure monotonic non-decreasing progress (clamp to last yielded)
+                    if absolute_progress < last_yielded_progress:
+                        absolute_progress = last_yielded_progress
+
+                    # if this prompt reports completion, advance the "currPrompt" index
+                    if progress_val >= 99.99:
+                        currPrompt = min(currPrompt + 1, numOfPrompts)
+
                     # reformat as string
                     new_line = f"[PROGRESS] {absolute_progress:.2f}\n"
                     # convert back to bytes for StreamingResponse
                     yield new_line.encode("utf-8")
+
+                    # update last yielded
+                    last_yielded_progress = absolute_progress
                 except ValueError:
                     # if parse fails, just forward original line
                     yield line
@@ -80,31 +105,27 @@ async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | 
 
 @app.post("/api/prompt/stream")
 async def prompt_stream(request: PromptRequest):
-    # Defence
-    # Apply defense dynamically via defense manager
-    blocked_response = await apply_defense(request.defense, request.prompt)
-    if blocked_response:
-        return blocked_response
 
+    # Attack: prompt-injection flows use the same script but different modes/lengths.
+    if request.attack in PROMPT_INJECTION_ATTACKS:
+        entry = PROMPT_INJECTION_ATTACKS[request.attack]
 
-    # Attack
-    if (request.attack == "role-playing-social-engeneering" or request.attack == "chain-of-questions"):
         # Build command using the same Python interpreter
         cmd = [
             sys.executable,
             "./attacks/promptInjection.py",
             "--model_id", request.model,
             "--template", request.prompt,
-            "--prompt_type", request.attack
+            "--prompt_type", request.attack,
+            "--defense_type", request.defense
         ]
 
         # ensure python subprocess does not buffer output
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "1"
-        numOfPrompts = 1
-        if (request.attack == "chain-of-questions"):
-            numOfPrompts = 9
-        generator = _run_script_and_stream(cmd, env=env, numOfPrompts=numOfPrompts)
+
+        numOfPrompts = int(entry.get("num_prompts", 1))
+        generator = _run_script_and_stream(cmd, numOfPrompts=numOfPrompts, env=env)
         # StreamingResponse sends bytes to the client as they are yielded
         return StreamingResponse(generator, media_type="text/plain; charset=utf-8")
 
@@ -114,7 +135,8 @@ async def prompt_stream(request: PromptRequest):
             sys.executable,
             "./attacks/FCB.py",
             "--model_id", request.model,
-            "--template", request.prompt
+            "--template", request.prompt,
+            "--defense_type", request.defense
         ]
         # ensure python subprocess does not buffer output
         env = os.environ.copy()

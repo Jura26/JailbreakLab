@@ -90,7 +90,6 @@ class MaskedDefender:
                 device = "cpu"
         
         self.device = device
-        print(f"🖥️  MaskedDefender initialized on device: {self.device}")
         
         self.threshold = threshold
         self.alpha = alpha
@@ -323,7 +322,7 @@ class MaskedDefender:
             
             # Assume class 0 is safe, class 1 is unsafe
             confidence = probs[0, 0].item()
-            is_safe = confidence > 0.5
+            is_safe = confidence > 0.25        #PROJEKT R, OVO CU SMANJITI DA MI PUSTA PROMPTOVE KAO HELLO
             
             # Calculate retention ratio (mask value)
             retention_ratio = masks[0, 0].item()
