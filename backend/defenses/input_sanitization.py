@@ -22,7 +22,6 @@ async def run(prompt: str) -> Optional[StreamingResponse]:
 
     # Normalize text (removes invisible characters, accents, etc.)
     normalized = unicodedata.normalize("NFKC", prompt).lower()
-
     # Check for suspicious phrases
     if any(phrase in normalized for phrase in suspicious_phrases):
         async def blocked_stream() -> AsyncGenerator[bytes, None]:

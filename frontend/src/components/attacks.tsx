@@ -6,6 +6,12 @@ export type Attack = {
 
 const attacks: Attack[] = [
    {
+      id: "DAN",
+      name: "DAN prompt",
+      description:
+         "Instructs the model to ignore its safety rules and respond as an uncensored, jailbreak persona.",
+   },
+   {
       id: "role-playing-social-engeneering",
       name: "Role Playing",
       description:
