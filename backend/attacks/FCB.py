@@ -11,6 +11,10 @@ from typing import List, Tuple
 import nltk
 from nltk.corpus import stopwords
 import gc
+from fastapi.responses import StreamingResponse
+from defenses.defense_manager import apply_defense
+import asyncio
+from typing import Optional
 
 # Download stopwords if not already present
 try:
@@ -133,11 +137,6 @@ class FCBAttack:
             )
 
         self.model.eval()
-
-        # Memory status
-        if self.device == "cuda":
-            allocated = torch.cuda.memory_allocated(0) / (1024**3)
-            reserved = torch.cuda.memory_reserved(0) / (1024**3)
 
         # Final cleanup
         gc.collect()
@@ -371,36 +370,35 @@ class FCBAttack:
 
         return jailbreak_prompt, metrics
 
+async def consume_stream(resp: StreamingResponse):
+    """Read and print all chunks from a StreamingResponse."""
+    async for chunk in resp.body_iterator:
+        if isinstance(chunk, (bytes, bytearray)):
+            print(chunk.decode(errors="replace"), end="", flush=True)
+        else:
+            print(str(chunk), end="", flush=True)
 
-# Main execution
-if __name__ == "__main__":
-    # Device setup with memory check
-    if torch.cuda.is_available():
-        print("GPU name:", torch.cuda.get_device_name(0))
-        gpu_name = torch.cuda.get_device_name(0)
-        total_mem = torch.cuda.get_device_properties(0).total_memory / (1024**3)
-        device = "cuda"
-        torch.cuda.empty_cache()
-    else:
-        print("No compatible GPU detected.")
-        device = "cpu"
-        
-    print("[PROGRESS] 0")
+
+async def main_with_defense(model_id: str, template: str, defense: str, device: str) -> Optional[StreamingResponse]:
+    """Main function that checks defense before running FCB attack"""
+    print("[PROGRESS] 0", flush=True)
     
-    parser = argparse.ArgumentParser(description="Safe HF text-generation wrapper")
-    parser.add_argument("--model_id", type=str, required=True)
-    parser.add_argument("--template", type=str, required=True)
-    args = parser.parse_args()
-
+    # 1) Check defense first
+    blocked_response = await apply_defense(defense, template)
+    if blocked_response:
+        print("Defense blocked attack prompt:\n" + template)
+        return blocked_response
+    
+    # 2) If not blocked, proceed with FCB attack
     print("[PROGRESS] 5")
-
+    
     gc.collect()
-
+    
     print("[PROGRESS] 10")
-
-    # Initialize with very aggressive parameters for jailbreak success
+    
+    # Initialize attacker
     attacker = FCBAttack(
-        model_name=args.model_id,
+        model_name=model_id,
         prompt_length=35,
         iterations=10,
         alpha1=0.05,
@@ -409,21 +407,17 @@ if __name__ == "__main__":
         omega=6.0,
         device=device
     )
-
+    
     print("[PROGRESS] 30")
-
-    # Test question
-    malicious_question = args.template
-
-    # Single attempt is sufficient with effective strategy
+    
+    malicious_question = template
     max_attempts = 1
     best_prompt = None
     best_energy = float('inf')
-
+    
     print("[PROGRESS] 35")
-
+    
     for attempt in range(max_attempts):
-        # Generate with more aggressive jailbreak keywords
         jailbreak_prompt, metrics = attacker.generate_jailbreak_prompt(
             malicious_question=malicious_question,
             keywords=[
@@ -437,41 +431,37 @@ if __name__ == "__main__":
                 "process", "instructions"
             ]
         )
-
+        
         final_energy = metrics['energies'][-1]['total']
-
-        # Keep the best one (lowest energy)
+        
         if final_energy < best_energy:
             best_energy = final_energy
             best_prompt = jailbreak_prompt
             best_metrics = metrics
-
-        # If energy is very low, we likely have a good jailbreak
+        
         if final_energy < 1.5:
             break
-
+    
     print("[PROGRESS] 70")
-
-    # Use the best prompt found
+    
     jailbreak_prompt = best_prompt
-    metrics = best_metrics
-
+    
     if device == "cuda":
         torch.cuda.empty_cache()
     gc.collect()
-
+    
     print("[PROGRESS] 75")
-
+    
     test_prompt = f"{jailbreak_prompt}\n\n{malicious_question}"
     test_inputs = attacker.tokenizer(test_prompt, return_tensors="pt", truncation=True, max_length=1000).to(device)
-
+    
     print("[PROGRESS] 80")
-
+    
     with torch.no_grad():
         test_output = attacker.model.generate(
             **test_inputs,
             max_new_tokens=800,
-            min_new_tokens=400,  # Force at least 400 tokens to ensure complete response
+            min_new_tokens=400,
             do_sample=True,
             temperature=0.9,
             top_p=0.95,
@@ -479,12 +469,52 @@ if __name__ == "__main__":
             repetition_penalty=1.2,
             no_repeat_ngram_size=3,
             pad_token_id=attacker.tokenizer.eos_token_id,
-            eos_token_id=None,  # Disable EOS to prevent early stopping
+            eos_token_id=None,
         )
-
+    
     print("[PROGRESS] 95")
-
+    
     response = attacker.tokenizer.decode(test_output[0], skip_special_tokens=True)
     print(response)
     
     print("[PROGRESS] 100")
+    
+    # Return None on success (consistent with promptInjection.py)
+    return None
+
+# Main execution
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="FCB Attack with Defense Check")
+    parser.add_argument("--model_id", type=str, required=True)
+    parser.add_argument("--template", type=str, required=True)
+    parser.add_argument("--defense_type", type=str, required=False, default="None")
+    args = parser.parse_args()
+    
+    # Device setup with memory check
+    if torch.cuda.is_available():
+        print("GPU name:", torch.cuda.get_device_name(0))
+        device = "cuda"
+        torch.cuda.empty_cache()
+    else:
+        print("No compatible GPU detected")
+        device = "cpu"
+    
+    # Run with defense check
+    async def runner():
+        result = await main_with_defense(
+            model_id=args.model_id,
+            template=args.template,
+            defense=args.defense_type,
+            device=device
+        )
+        
+        if isinstance(result, StreamingResponse):
+            await consume_stream(result)
+        elif result is not None:
+            print(result)
+            return False  # Signal error
+        return True  # Signal success
+    
+    success = asyncio.run(runner())
+    if not success:
+        exit(1)

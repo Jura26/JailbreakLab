@@ -90,7 +90,6 @@ class MaskedDefender:
                 device = "cpu"
         
         self.device = device
-        print(f"🖥️  MaskedDefender initialized on device: {self.device}")
         
         self.threshold = threshold
         self.alpha = alpha

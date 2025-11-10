@@ -1,6 +1,14 @@
 import "./App.css";
 import React, { useState } from "react";
-import { Shield, Sword, Brain, Send, Info } from "lucide-react";
+import {
+   Shield,
+   Sword,
+   Brain,
+   Send,
+   Info,
+   CheckCircle,
+   XCircle,
+} from "lucide-react";
 import attacks from "./components/attacks";
 import defenses from "./components/defenses";
 import models from "./components/models";
@@ -358,9 +366,32 @@ function App() {
                            className="bg-white/5 rounded-lg p-4 border border-white/10"
                         >
                            <div className="flex justify-between items-start mb-2">
-                              <span className="text-xs text-purple-300">
-                                 {prompt.timestamp}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                 {/* Status icon: check when finished successfully, X when blocked or error */}
+                                 {prompt.isBlocked ||
+                                 (prompt.scriptOutput || "").startsWith(
+                                    "Error:"
+                                 ) ? (
+                                    <XCircle
+                                       className="text-red-400"
+                                       size={16}
+                                       title={
+                                          prompt.isBlocked ? "Blocked" : "Error"
+                                       }
+                                    />
+                                 ) : prompt.progress === 100 ? (
+                                    <CheckCircle
+                                       className="text-green-400"
+                                       size={16}
+                                       title="Completed"
+                                    />
+                                 ) : null}
+
+                                 <span className="text-xs text-purple-300">
+                                    {prompt.timestamp}
+                                 </span>
+                              </div>
+
                               <div className="flex gap-2 text-xs items-center">
                                  {/* GPU info inline */}
                                  {prompt.gpuInfo && (
@@ -399,7 +430,16 @@ function App() {
                            )}
 
                            {prompt.scriptOutput && (
-                              <pre className="text-green-300 text-sm mt-2 whitespace-pre-wrap">
+                              <pre
+                                 className={`text-sm mt-2 whitespace-pre-wrap ${
+                                    prompt.isBlocked ||
+                                    (prompt.scriptOutput || "").startsWith(
+                                       "Error:"
+                                    )
+                                       ? "text-red-300"
+                                       : "text-green-300"
+                                 }`}
+                              >
                                  {prompt.scriptOutput}
                               </pre>
                            )}
