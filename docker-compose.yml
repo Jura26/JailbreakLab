@@ -11,10 +11,6 @@ services:
       resources:
         reservations:
           cpus: '1'
-          devices:
-            - driver: nvidia
-              count: all # alternatively, use `count: all` for all GPUs
-              capabilities: [gpu]
 
   frontend:
     build: ./frontend
