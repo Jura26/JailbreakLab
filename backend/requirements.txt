@@ -6,3 +6,4 @@ langchain-huggingface
 langchain-core
 nltk
 accelerate
+pyfiglet

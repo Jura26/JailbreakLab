@@ -26,6 +26,25 @@ class PromptRequest(BaseModel):
     defense: str
     model: str
 
+# Registry for prompt-injection attack scripts and metadata
+PROMPT_INJECTION_ATTACKS = {
+    "role-playing-social-engeneering": {
+        "num_prompts": 1,
+    },
+    "chain-of-questions": {
+        "num_prompts": 9,
+    },
+    "DAN": {
+        "num_prompts": 2,
+    },
+    "ascii-art-jailbreak": {
+        "num_prompts": 2,
+    },
+    "DAN": {
+        "num_prompts": 2,
+    },
+}
+
 # helper: async generator that runs the script and yields chunks of stdout
 async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | None = None) -> AsyncGenerator[bytes, None]:
     proc = await asyncio.create_subprocess_exec(

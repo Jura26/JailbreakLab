@@ -23,6 +23,12 @@ const attacks: Attack[] = [
       description:
          "Iteratively steers a language model’s outputs using controllable bias signals to optimize for specific behaviors, such as maximizing compliance or evading safety constraints.",
    },
+   {
+      id: "ascii-art-jailbreak",
+      name: "ASCII Art Jailbreak",
+      description:
+         "Uses ASCII art or other visual techniques to bypass content filters and restrictions.",
+   },
 ];
 
 export default attacks;
