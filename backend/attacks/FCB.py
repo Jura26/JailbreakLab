@@ -384,8 +384,8 @@ async def main_with_defense(model_id: str, template: str, defense: str, device: 
     print("[PROGRESS] 0", flush=True)
     
     # 1) Check defense first
-    blocked_response = await apply_defense(defense, template)
-    if blocked_response:
+    blocked, blocked_response = await apply_defense(defense, template)
+    if blocked:
         print("Defense blocked attack prompt:\n" + template)
         return blocked_response
     
@@ -453,33 +453,38 @@ async def main_with_defense(model_id: str, template: str, defense: str, device: 
     print("[PROGRESS] 75")
     
     test_prompt = f"{jailbreak_prompt}\n\n{malicious_question}"
-    test_inputs = attacker.tokenizer(test_prompt, return_tensors="pt", truncation=True, max_length=1000).to(device)
-    
+
     print("[PROGRESS] 80")
-    
-    with torch.no_grad():
-        test_output = attacker.model.generate(
-            **test_inputs,
-            max_new_tokens=800,
-            min_new_tokens=400,
-            do_sample=True,
-            temperature=0.9,
-            top_p=0.95,
-            top_k=50,
-            repetition_penalty=1.2,
-            no_repeat_ngram_size=3,
-            pad_token_id=attacker.tokenizer.eos_token_id,
-            eos_token_id=None,
-        )
-    
+
+    # Delegate final generation to the centralized model runner via defense_manager.
+    generation_options = {
+        "max_new_tokens": 800,
+        "do_sample": True,
+        "temperature": 0.9,
+        "top_p": 0.95,
+        "top_k": 50,
+        "repetition_penalty": 1.2,
+        "extra_generation_kwargs": {
+            "min_new_tokens": 400,
+            "no_repeat_ngram_size": 3,
+            # Keep pad/eos handling in the model runner
+        },
+    }
+
+    # apply_defense will run defenses and then call the model runner when model_id is provided
+    blocked, final_resp = await apply_defense(defense, test_prompt, model_id=model_id, device=device, generation_options=generation_options)
+
     print("[PROGRESS] 95")
-    
-    response = attacker.tokenizer.decode(test_output[0], skip_special_tokens=True)
-    print(response)
-    
+
+    if blocked:
+        # defense blocked the final prompt
+        return final_resp
+
+    # If we received a StreamingResponse for model output, return it so the caller can consume it.
+    if isinstance(final_resp, StreamingResponse):
+        return final_resp
+
     print("[PROGRESS] 100")
-    
-    # Return None on success (consistent with promptInjection.py)
     return None
 
 # Main execution

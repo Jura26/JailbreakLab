@@ -84,7 +84,13 @@ async def run(prompt: str) -> Optional[StreamingResponse]:
         # Allowed — return None so downstream processing continues
         return None
     else:
+        # Build a informative blocked message including confidence and original text
+        confidence = result.get('confidence', 0.0)
+
         async def blocked_stream() -> AsyncGenerator[bytes, None]:
+            msg = f"BLOCKED_BY=masked_defender;CONFIDENCE={confidence:.3f};PROMPT={prompt}\n"
+            yield msg.encode("utf-8")
+            # Also include a simple human-readable line for frontend compatibility
             yield b"Blocked input\n"
 
         return StreamingResponse(blocked_stream(), media_type="text/plain; charset=utf-8")

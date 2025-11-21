@@ -1,5 +1,8 @@
+"use client";
+
 import "./App.css";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import {
    Shield,
    Sword,
@@ -8,6 +11,7 @@ import {
    Info,
    CheckCircle,
    XCircle,
+   Zap,
 } from "lucide-react";
 import attacks from "./components/attacks";
 import defenses from "./components/defenses";
@@ -38,9 +42,9 @@ interface Prompt {
    defense: Defense;
    model: Model;
    scriptOutput: string;
-   progress?: number; // 0 to 100
+   progress?: number;
    gpuInfo?: string;
-   isBlocked?: boolean; // Flag for blocked input
+   isBlocked?: boolean;
 }
 
 function App() {
@@ -76,7 +80,7 @@ function App() {
 
       try {
          const response = await fetch(
-            "http://localhost:8000/api/prompt/stream",
+            "http://34.72.226.33:8000/api/prompt/stream",
             {
                method: "POST",
                headers: { "Content-Type": "application/json" },
@@ -136,7 +140,6 @@ function App() {
                      blockedPrompt = true;
                      continue;
                   }
-                  // FIRST LINE GPU INFO (per prompt)
                   if (
                      !gpuCapturedForThisPrompt &&
                      (trimmed.startsWith("No compatible GPU") ||
@@ -152,12 +155,11 @@ function App() {
                         return copy;
                      });
                      gpuCapturedForThisPrompt = true;
-                     continue; // don’t add to scriptOutput
+                     continue;
                   }
 
-                  // Progress update
                   if (trimmed.startsWith("[PROGRESS]")) {
-                     const percent = parseFloat(
+                     const percent = Number.parseFloat(
                         trimmed.replace("[PROGRESS]", "").trim()
                      );
                      if (!isNaN(percent)) {
@@ -172,7 +174,6 @@ function App() {
                         });
                      }
                   } else {
-                     // Normal output
                      localAccum += line + "\n";
                      setPrompts((prev) => {
                         const copy = [...prev];
@@ -188,7 +189,6 @@ function App() {
             }
          }
 
-         // finalize progress
          setPrompts((prev) => {
             const copy = [...prev];
             if (!copy[newIndex]) return prev;
@@ -218,259 +218,329 @@ function App() {
    };
 
    return (
-      <div className="flex justify-center items-center min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5">
-         <div className="max-w-7xl mx-auto">
-            {/* Configuration Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-               {/* Attack */}
-               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-2 mb-2">
-                     <Sword className="text-red-400" size={24} />
-                     <h2 className="text-xl font-semibold text-white">
-                        Attack Type
+      <div className="min-h-screen w-full bg-gradient-to-br from-[#0a0a0f] via-[#0f0f1a] to-[#0a0a0f] p-3 md:p-4">
+         <div className="max-w-[1800px] mx-auto">
+            <header className="mb-4 text-center">
+               <div className="flex items-center justify-center gap-2 mb-2">
+                  <Zap className="text-[#6366f1] w-7 h-7" />
+                  <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#f8fafc] to-[#cbd5e1] bg-clip-text text-transparent">
+                     AI Security Tester
+                  </h1>
+               </div>
+               <p className="text-[#94a3b8] text-sm max-w-2xl mx-auto leading-relaxed">
+                  Test AI model vulnerabilities with various attack and defense
+                  mechanisms
+               </p>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-3 lg:gap-4">
+               <div className="flex flex-col gap-3 h-[calc(100vh-180px)] overflow-y-auto">
+                  <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-6 border border-[#2d2d3d] shadow-2xl hover:border-[#ef4444]/30 transition-all duration-300 flex-1 flex flex-col justify-center">
+                     <div className="flex items-center gap-2 mb-4">
+                        <div className="bg-[#ef4444]/10 p-2 rounded-lg border border-[#ef4444]/20">
+                           <Sword className="text-[#ef4444] w-5 h-5" />
+                        </div>
+                        <h2 className="text-lg font-bold text-[#f8fafc]">
+                           Attack Vector
+                        </h2>
+                     </div>
+
+                     <div className="relative mb-4">
+                        <select
+                           value={selectedAttack.id}
+                           onChange={(e) =>
+                              setSelectedAttack(
+                                 attacks.find((a) => a.id === e.target.value) ||
+                                    attacks[0]
+                              )
+                           }
+                           className="w-full bg-[#252532] border-2 border-[#2d2d3d] rounded-lg px-4 py-3 text-[#f8fafc] cursor-pointer hover:border-[#ef4444]/50 focus:border-[#ef4444] focus:outline-none font-medium text-base appearance-none pr-10 transition-all duration-200"
+                           style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ef4444'%3E%3Cpath strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                              backgroundRepeat: "no-repeat",
+                              backgroundPosition: "right 0.5rem center",
+                              backgroundSize: "1.5rem 1.5rem",
+                           }}
+                        >
+                           {attacks.map((attack) => (
+                              <option
+                                 key={attack.id}
+                                 value={attack.id}
+                                 className="bg-[#252532] py-2"
+                              >
+                                 {attack.name}
+                              </option>
+                           ))}
+                        </select>
+                     </div>
+
+                     <div className="bg-[#ef4444]/5 border border-[#ef4444]/20 rounded-lg p-4">
+                        <div className="flex items-start gap-2">
+                           <Info
+                              className="text-[#ef4444] flex-shrink-0 mt-0.5"
+                              size={16}
+                           />
+                           <p className="text-sm text-[#cbd5e1] leading-relaxed">
+                              {selectedAttack.description}
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-6 border border-[#2d2d3d] shadow-2xl hover:border-[#10b981]/30 transition-all duration-300 flex-1 flex flex-col justify-center">
+                     <div className="flex items-center gap-2 mb-4">
+                        <div className="bg-[#10b981]/10 p-2 rounded-lg border border-[#10b981]/20">
+                           <Shield className="text-[#10b981] w-5 h-5" />
+                        </div>
+                        <h2 className="text-lg font-bold text-[#f8fafc]">
+                           Defense Mechanism
+                        </h2>
+                     </div>
+
+                     <div className="relative mb-4">
+                        <select
+                           value={selectedDefense.id}
+                           onChange={(e) =>
+                              setSelectedDefense(
+                                 defenses.find(
+                                    (d) => d.id === e.target.value
+                                 ) || defenses[0]
+                              )
+                           }
+                           className="w-full bg-[#252532] border-2 border-[#2d2d3d] rounded-lg px-4 py-3 text-[#f8fafc] cursor-pointer hover:border-[#10b981]/50 focus:border-[#10b981] focus:outline-none font-medium text-base appearance-none pr-10 transition-all duration-200"
+                           style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981'%3E%3Cpath strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                              backgroundRepeat: "no-repeat",
+                              backgroundPosition: "right 0.5rem center",
+                              backgroundSize: "1.5rem 1.5rem",
+                           }}
+                        >
+                           {defenses.map((defense) => (
+                              <option
+                                 key={defense.id}
+                                 value={defense.id}
+                                 className="bg-[#252532] py-2"
+                              >
+                                 {defense.name}
+                              </option>
+                           ))}
+                        </select>
+                     </div>
+
+                     <div className="bg-[#10b981]/5 border border-[#10b981]/20 rounded-lg p-4">
+                        <div className="flex items-start gap-2">
+                           <Info
+                              className="text-[#10b981] flex-shrink-0 mt-0.5"
+                              size={16}
+                           />
+                           <p className="text-sm text-[#cbd5e1] leading-relaxed">
+                              {selectedDefense.description}
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-6 border border-[#2d2d3d] shadow-2xl hover:border-[#3b82f6]/30 transition-all duration-300 flex-1 flex flex-col justify-center">
+                     <div className="flex items-center gap-2 mb-4">
+                        <div className="bg-[#3b82f6]/10 p-2 rounded-lg border border-[#3b82f6]/20">
+                           <Brain className="text-[#3b82f6] w-5 h-5" />
+                        </div>
+                        <h2 className="text-lg font-bold text-[#f8fafc]">
+                           Target Model
+                        </h2>
+                     </div>
+
+                     <div className="relative mb-4">
+                        <select
+                           value={selectedModel.id}
+                           onChange={(e) =>
+                              setSelectedModel(
+                                 models.find((m) => m.id === e.target.value) ||
+                                    models[0]
+                              )
+                           }
+                           className="w-full bg-[#252532] border-2 border-[#2d2d3d] rounded-lg px-4 py-3 text-[#f8fafc] cursor-pointer hover:border-[#3b82f6]/50 focus:border-[#3b82f6] focus:outline-none font-medium text-base appearance-none pr-10 transition-all duration-200"
+                           style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233b82f6'%3E%3Cpath strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                              backgroundRepeat: "no-repeat",
+                              backgroundPosition: "right 0.5rem center",
+                              backgroundSize: "1.5rem 1.5rem",
+                           }}
+                        >
+                           {models.map((model) => (
+                              <option
+                                 key={model.id}
+                                 value={model.id}
+                                 className="bg-[#252532] py-2"
+                              >
+                                 {model.name}
+                              </option>
+                           ))}
+                        </select>
+                     </div>
+
+                     <div className="bg-[#3b82f6]/5 border border-[#3b82f6]/20 rounded-lg p-4">
+                        <div className="flex items-start gap-2">
+                           <Info
+                              className="text-[#3b82f6] flex-shrink-0 mt-0.5"
+                              size={16}
+                           />
+                           <p className="text-sm text-[#cbd5e1] leading-relaxed">
+                              {selectedModel.description}
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="flex flex-col gap-3 h-[calc(100vh-180px)]">
+                  <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl flex-1 flex flex-col overflow-hidden">
+                     <h2 className="text-xl font-bold text-[#f8fafc] mb-3 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#6366f1] animate-pulse" />
+                        Execution History
                      </h2>
-                  </div>
 
-                  <select
-                     value={selectedAttack.id}
-                     onChange={(e) =>
-                        setSelectedAttack(
-                           attacks.find((a) => a.id === e.target.value) ||
-                              attacks[0]
-                        )
-                     }
-                     className="w-full bg-white/5 border border-white/30 rounded-lg px-4 py-2 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-red-400"
-                  >
-                     {attacks.map((attack) => (
-                        <option
-                           key={attack.id}
-                           value={attack.id}
-                           className="bg-slate-800"
-                        >
-                           {attack.name}
-                        </option>
-                     ))}
-                  </select>
-
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                     <div className="flex items-start gap-2">
-                        <Info
-                           className="text-red-400 flex-shrink-0 mt-1"
-                           size={16}
-                        />
-                        <p className="text-sm text-red-100">
-                           {selectedAttack.description}
-                        </p>
-                     </div>
-                  </div>
-               </div>
-
-               {/* Defense */}
-               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-2 mb-4">
-                     <Shield className="text-green-400" size={24} />
-                     <h2 className="text-xl font-semibold text-white">
-                        Defense Type
-                     </h2>
-                  </div>
-                  <select
-                     value={selectedDefense.id}
-                     onChange={(e) =>
-                        setSelectedDefense(
-                           defenses.find((d) => d.id === e.target.value) ||
-                              defenses[0]
-                        )
-                     }
-                     className="w-full bg-white/5 border border-white/30 rounded-lg px-4 py-2 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  >
-                     {defenses.map((defense) => (
-                        <option
-                           key={defense.id}
-                           value={defense.id}
-                           className="bg-slate-800"
-                        >
-                           {defense.name}
-                        </option>
-                     ))}
-                  </select>
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                     <div className="flex items-start gap-2">
-                        <Info
-                           className="text-green-400 flex-shrink-0 mt-1"
-                           size={16}
-                        />
-                        <p className="text-sm text-green-100">
-                           {selectedDefense.description}
-                        </p>
-                     </div>
-                  </div>
-               </div>
-
-               {/* Model */}
-               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-2 mb-4">
-                     <Brain className="text-blue-400" size={24} />
-                     <h2 className="text-xl font-semibold text-white">Model</h2>
-                  </div>
-                  <select
-                     value={selectedModel.id}
-                     onChange={(e) =>
-                        setSelectedModel(
-                           models.find((m) => m.id === e.target.value) ||
-                              models[0]
-                        )
-                     }
-                     className="w-full bg-white/5 border border-white/30 rounded-lg px-4 py-2 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  >
-                     {models.map((model) => (
-                        <option
-                           key={model.id}
-                           value={model.id}
-                           className="bg-slate-800"
-                        >
-                           {model.name}
-                        </option>
-                     ))}
-                  </select>
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                     <div className="flex items-start gap-2">
-                        <Info
-                           className="text-blue-400 flex-shrink-0 mt-1"
-                           size={16}
-                        />
-                        <p className="text-sm text-blue-100">
-                           {selectedModel.description}
-                        </p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* Prompt Display */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 mb-6 h-[300px] overflow-y-auto">
-               <h2 className="text-xl font-semibold text-white mb-4">
-                  Prompt History
-               </h2>
-               <div className="space-y-3 max-h-[200px] overflow-y-auto">
-                  {prompts.length === 0 ? (
-                     <div className="text-center text-white opacity-50 py-12">
-                        <p>
-                           No prompts sent yet. Type a message below to get
-                           started.
-                        </p>
-                     </div>
-                  ) : (
-                     prompts.map((prompt, idx) => (
-                        <div
-                           key={idx}
-                           className="bg-white/5 rounded-lg p-4 border border-white/10"
-                        >
-                           <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center gap-2">
-                                 {/* Status icon: check when finished successfully, X when blocked or error */}
-                                 {prompt.isBlocked ||
-                                 (prompt.scriptOutput || "").startsWith(
-                                    "Error:"
-                                 ) ? (
-                                    <XCircle
-                                       className="text-red-400"
-                                       size={16}
-                                       title={
-                                          prompt.isBlocked ? "Blocked" : "Error"
-                                       }
-                                    />
-                                 ) : prompt.progress === 100 ? (
-                                    <CheckCircle
-                                       className="text-green-400"
-                                       size={16}
-                                       title="Completed"
-                                    />
-                                 ) : null}
-
-                                 <span className="text-xs text-purple-300">
-                                    {prompt.timestamp}
-                                 </span>
-                              </div>
-
-                              <div className="flex gap-2 text-xs items-center">
-                                 {/* GPU info inline */}
-                                 {prompt.gpuInfo && (
-                                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded">
-                                       {prompt.gpuInfo}
-                                    </span>
-                                 )}
-                                 <span className="px-2 py-1 bg-red-500/20 text-red-300 rounded">
-                                    {prompt.attack.name}
-                                 </span>
-                                 <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded">
-                                    {prompt.defense.name}
-                                 </span>
-                                 <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded">
-                                    {prompt.model.name}
-                                 </span>
+                     <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+                        {prompts.length === 0 ? (
+                           <div className="h-full flex items-center justify-center">
+                              <div className="text-center py-8">
+                                 <div className="bg-[#6366f1]/10 w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-3 border border-[#6366f1]/20">
+                                    <Send className="text-[#6366f1] w-7 h-7" />
+                                 </div>
+                                 <p className="text-[#94a3b8] text-lg font-medium mb-1">
+                                    Ready to test
+                                 </p>
+                                 <p className="text-[#64748b] text-sm">
+                                    Configure your attack, defense, and model,
+                                    then send a prompt
+                                 </p>
                               </div>
                            </div>
-
-                           <p className="text-white wrap-break-word">
-                              {prompt.text}
-                           </p>
-
-                           {/* Progress Bar */}
-                           {prompt.progress !== undefined && (
-                              <div className="w-full bg-white/20 rounded-full h-2 mt-2">
-                                 <div
-                                    className={`h-2 rounded-full transition-all duration-200 ${
-                                       prompt.isBlocked
-                                          ? "bg-red-500" // RED when blocked
-                                          : "bg-green-400" // GREEN when not blocked
-                                    }`}
-                                    style={{ width: `${prompt.progress}%` }}
-                                 />
-                              </div>
-                           )}
-
-                           {prompt.scriptOutput && (
-                              <pre
-                                 className={`text-sm mt-2 whitespace-pre-wrap ${
-                                    prompt.isBlocked ||
-                                    (prompt.scriptOutput || "").startsWith(
-                                       "Error:"
-                                    )
-                                       ? "text-red-300"
-                                       : "text-green-300"
-                                 }`}
+                        ) : (
+                           prompts.map((prompt, idx) => (
+                              <div
+                                 key={idx}
+                                 className="bg-[#252532]/60 rounded-lg p-3 border border-[#2d2d3d] hover:border-[#3d3d4d] transition-all duration-200 animate-fade-in"
                               >
-                                 {prompt.scriptOutput}
-                              </pre>
-                           )}
-                        </div>
-                     ))
-                  )}
-               </div>
-            </div>
+                                 <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                                    <div className="flex items-center gap-2">
+                                       {prompt.isBlocked ||
+                                       (prompt.scriptOutput || "").startsWith(
+                                          "Error:"
+                                       ) ? (
+                                          <div className="bg-[#ef4444]/10 p-1 rounded border border-[#ef4444]/20">
+                                             <XCircle
+                                                className="text-[#ef4444]"
+                                                size={14}
+                                             />
+                                          </div>
+                                       ) : prompt.progress === 100 ? (
+                                          <div className="bg-[#10b981]/10 p-1 rounded border border-[#10b981]/20">
+                                             <CheckCircle
+                                                className="text-[#10b981]"
+                                                size={14}
+                                             />
+                                          </div>
+                                       ) : (
+                                          <div className="w-5 h-5 rounded border-2 border-[#6366f1] border-t-transparent animate-spin" />
+                                       )}
 
-            {/* Input */}
-            <div className="bg-white/10 h-1/6 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-               <h2 className="text-xl font-semibold text-white mb-4">
-                  Send Prompt
-               </h2>
-               <div className="flex gap-4">
-                  <textarea
-                     value={message}
-                     onChange={(e) => setMessage(e.target.value)}
-                     onKeyPress={handleKeyPress}
-                     placeholder="Type your prompt here..."
-                     className="flex-1 bg-white/5 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white-50 focus:outline-none focus:ring-2 focus:ring-red-800 resize-none"
-                     rows={1}
-                  />
-                  <button
-                     onClick={handleSend}
-                     disabled={!message.trim()}
-                     className="bg-gradient-to-r from-green-500/50 to-green-500/80 hover:from-green-900 hover:to-green-900 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 self-end"
-                  >
-                     <Send size={20} />
-                     Send
-                  </button>
+                                       <span className="text-xs text-[#94a3b8] font-mono">
+                                          {prompt.timestamp}
+                                       </span>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-1.5 text-xs">
+                                       {prompt.gpuInfo && (
+                                          <span className="px-2 py-0.5 bg-[#f59e0b]/10 text-[#f59e0b] rounded border border-[#f59e0b]/20 font-medium">
+                                             {prompt.gpuInfo}
+                                          </span>
+                                       )}
+                                       <span className="px-2 py-0.5 bg-[#ef4444]/10 text-[#ef4444] rounded border border-[#ef4444]/20 font-medium">
+                                          {prompt.attack.name}
+                                       </span>
+                                       <span className="px-2 py-0.5 bg-[#10b981]/10 text-[#10b981] rounded border border-[#10b981]/20 font-medium">
+                                          {prompt.defense.name}
+                                       </span>
+                                       <span className="px-2 py-0.5 bg-[#3b82f6]/10 text-[#3b82f6] rounded border border-[#3b82f6]/20 font-medium">
+                                          {prompt.model.name}
+                                       </span>
+                                    </div>
+                                 </div>
+
+                                 <p className="text-[#f8fafc] text-base leading-relaxed mb-2 break-words">
+                                    {prompt.text}
+                                 </p>
+
+                                 {prompt.progress !== undefined && (
+                                    <div className="w-full bg-[#2d2d3d] rounded-full h-1.5 mb-2 overflow-hidden">
+                                       <div
+                                          className={`h-full rounded-full transition-all duration-300 ${
+                                             prompt.isBlocked
+                                                ? "bg-gradient-to-r from-[#ef4444] to-[#dc2626]"
+                                                : "bg-gradient-to-r from-[#10b981] to-[#059669]"
+                                          }`}
+                                          style={{
+                                             width: `${prompt.progress}%`,
+                                          }}
+                                       />
+                                    </div>
+                                 )}
+
+                                 {prompt.scriptOutput && (
+                                    <div
+                                       className={`rounded-lg p-2 border ${
+                                          prompt.isBlocked ||
+                                          (
+                                             prompt.scriptOutput || ""
+                                          ).startsWith("Error:")
+                                             ? "bg-[#ef4444]/5 border-[#ef4444]/20"
+                                             : "bg-[#10b981]/5 border-[#10b981]/20"
+                                       }`}
+                                    >
+                                       <pre
+                                          className={`text-sm font-mono whitespace-pre-wrap break-words ${
+                                             prompt.isBlocked ||
+                                             (
+                                                prompt.scriptOutput || ""
+                                             ).startsWith("Error:")
+                                                ? "text-[#fca5a5]"
+                                                : "text-[#6ee7b7]"
+                                          }`}
+                                       >
+                                          {prompt.scriptOutput}
+                                       </pre>
+                                    </div>
+                                 )}
+                              </div>
+                           ))
+                        )}
+                     </div>
+                  </div>
+
+                  <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl">
+                     <h2 className="text-xl font-bold text-[#f8fafc] mb-3">
+                        Test Prompt
+                     </h2>
+                     <div className="flex gap-2">
+                        <textarea
+                           value={message}
+                           onChange={(e) => setMessage(e.target.value)}
+                           onKeyPress={handleKeyPress}
+                           placeholder="Enter your test prompt here... (Press Enter to send, Shift+Enter for new line)"
+                           className="flex-1 bg-[#252532] border-2 border-[#2d2d3d] rounded-lg px-3 py-2 text-[#f8fafc] placeholder-[#64748b] hover:border-[#3d3d4d] focus:border-[#6366f1] resize-none h-20 text-base font-medium leading-relaxed"
+                           rows={3}
+                        />
+                        <button
+                           onClick={handleSend}
+                           disabled={!message.trim()}
+                           className="bg-gradient-to-r from-[#6366f1] to-[#4f46e5] hover:from-[#4f46e5] hover:to-[#4338ca] disabled:from-[#2d2d3d] disabled:to-[#2d2d3d] text-white px-6 rounded-lg font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-[#6366f1]/20 hover:shadow-2xl active:scale-95 text-sm"
+                        >
+                           <Send size={16} />
+                           <span className="hidden sm:inline">Send</span>
+                        </button>
+                     </div>
+                  </div>
                </div>
             </div>
          </div>

@@ -15,7 +15,6 @@ from fastapi.responses import StreamingResponse
 
 import asyncio
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from defenses.defense_manager import apply_defense
 
 # silencing / controlling verbosity BEFORE importing transformers/accelerate/others
@@ -28,116 +27,34 @@ warnings.filterwarnings("ignore")
 import logging
 logging.getLogger("transformers").setLevel(logging.ERROR)
 
-from langchain_huggingface import HuggingFacePipeline  # type: ignore
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableSequence
-LC_HF_AVAILABLE = True
-
 async def main(model_id: str, template: str, print_output: bool, defense: str) -> Optional[StreamingResponse]:
+    """Check defenses and, if allowed, run model via central runner and return StreamingResponse.
+    The actual model run is delegated to `defense_manager.apply_defense` which performs the
+    defense check and then (if allowed) calls into `backend.model.generate_streaming`.
+    """
     print("[PROGRESS] 0", flush=True)
-    # 1) sanitize: disallow harmful prompts
-    blocked_response = await apply_defense(defense, template)
-    if blocked_response:
-        print("Defense blocked attack prompt:\n" + template)
-        return blocked_response
-    
-    prompt_to_use = template
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("[PROGRESS] 5", flush=True)
 
-    # 2) load tokenizer + model
-    # Note: use dtype instead of deprecated torch_dtype
-    dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+    # Request the defense manager to either block or run the model for us.
     print("[PROGRESS] 10", flush=True)
+    blocked, resp = await apply_defense(defense, template, model_id=model_id, device=device)
 
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    if tokenizer.pad_token_id is None:
-                tokenizer.pad_token_id = tokenizer.eos_token_id
+    if blocked:
+        # defense blocked the prompt; return the StreamingResponse so callers can handle it
+        return resp
 
-    print("[PROGRESS] 20", flush=True)
-    # AutoModelForCausalLM for text-generation models
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        dtype=dtype,
-        device_map="auto" if torch.cuda.is_available() else None,
-    )
-    print("[PROGRESS] 65", flush=True)
-
-    # 3) create pipeline
-    textgen = pipeline(
-        "text-generation",
-        model=model,
-        tokenizer=tokenizer
-    )
-
-    print("[PROGRESS] 75", flush=True)
-
-    # Ensure the prompt isn't longer than the model's positional embedding capacity.
-    max_pos = getattr(model.config, "n_positions", None) or getattr(model.config, "max_position_embeddings", None) or getattr(model.config, "n_ctx", None)
-    if max_pos is None:
-        max_pos = 1024
-    max_input_len = max(1, int(max_pos) - 1)
-
-    # Tokenize with truncation to determine actual input length and produce a truncated prompt string.
-    try:
-        encoded = tokenizer(prompt_to_use, truncation=True, max_length=max_input_len, return_tensors="pt")
-        input_len = int(encoded["input_ids"].shape[1])
-        # Set tokenizer model_max_length so subsequent tokenization (pipeline) respects truncation
-        tokenizer.model_max_length = max_input_len
-        tokenizer.truncation_side = "right"
-        # Decode the truncated input back to text for the pipeline; avoid aggressive cleanup to keep tokens stable
-        prompt_to_use = tokenizer.decode(encoded["input_ids"][0], skip_special_tokens=True, clean_up_tokenization_spaces=False)
-    except Exception:
-        # If tokenizer fails, fall back to raw prompt and assume short input
-        input_len = 0
-
-    # Choose a safe max_new_tokens so input_len + max_new_tokens <= max_pos
-    max_new_tokens = max(1, min(128, int(max_pos) - max(1, input_len)))
-
-    # 4) If LangChain wrapper available, wrap and use RunnableSequence; otherwise call pipeline directly.
-    if LC_HF_AVAILABLE:
-        try:
-            prompt = PromptTemplate(input_variables=[], template=prompt_to_use)
-            hf_llm = HuggingFacePipeline(pipeline=textgen)
-            chain = RunnableSequence(prompt | hf_llm)
-            out = chain.invoke({})  # empty dict because input_variables=[]
-
-            # Extract only model continuation
-            if isinstance(out, str):
-                continuation = out
-            elif isinstance(out, dict):
-                continuation = out.get("text") or out.get("generated_text") or ""
-            else:
-                continuation = str(out)
-
-            # Remove prompt if echoed back
-            if continuation.startswith(prompt_to_use):
-                continuation = continuation[len(prompt_to_use):].strip()
-
-            if print_output:
-                print(continuation)
-            print("[PROGRESS] 100", flush=True)
-            return
-        except Exception as e:
-            warnings.warn(f"LangChain execution failed ({e}). Falling back to direct pipeline call.")
-
-    # 5) fallback: direct pipeline call
-    outputs = textgen(
-        prompt_to_use,
-        max_new_tokens=max_new_tokens,
-    )
-
-    # Extract only model continuation
-    if isinstance(outputs, list) and len(outputs) > 0 and "generated_text" in outputs[0]:
-        generated = outputs[0]["generated_text"]
-        # Remove prompt if echoed back
-        if generated.startswith(prompt_to_use):
-            continuation = generated[len(prompt_to_use):].strip()
-        else:
-            continuation = generated
+    if resp:
+        # This is model output. If caller requested printed output, return it; otherwise consume silently.
         if print_output:
-            print(continuation)
-    else:
-        print("\n[ERROR] Unexpected pipeline output:", outputs)
+            return resp
 
+        async for _chunk in resp.body_iterator:
+            # discard
+            pass
+        return None
+
+    # If no StreamingResponse returned, treat as success with no output
     return None
 
 async def consume_stream(resp: StreamingResponse):

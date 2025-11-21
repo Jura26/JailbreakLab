@@ -22,11 +22,19 @@ async def run(prompt: str) -> Optional[StreamingResponse]:
 
     # Normalize text (removes invisible characters, accents, etc.)
     normalized = unicodedata.normalize("NFKC", prompt).lower()
-    # Check for suspicious phrases
-    if any(phrase in normalized for phrase in suspicious_phrases):
-        async def blocked_stream() -> AsyncGenerator[bytes, None]:
-            yield b"Blocked input\n"
-        return StreamingResponse(blocked_stream(), media_type="text/plain; charset=utf-8")
+    # Check for suspicious phrases and report which one matched
+    for phrase in suspicious_phrases:
+        if phrase in normalized:
+            matched = phrase
+
+            async def blocked_stream() -> AsyncGenerator[bytes, None]:
+                # Send a short structured message so frontend can display what was caught
+                msg = f"BLOCKED_PROMPT:\n{prompt}\n"
+                yield msg.encode("utf-8")
+                # Also include a simple human-readable line for frontend compatibility
+                yield b"Blocked input\n"
+
+            return StreamingResponse(blocked_stream(), media_type="text/plain; charset=utf-8")
 
     # No suspicious content found
     return None

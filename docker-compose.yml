@@ -1,26 +1,44 @@
 services:
-  backend:
-    build: ./backend
-    container_name: projekt-backend
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    deploy:
-      resources:
-        reservations:
-          cpus: '1'
+   backend:
+      build: ./backend
+      container_name: projekt-backend
+      ports:
+         - "8000:8000"
+      volumes:
+         - ./backend:/app
+      command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      deploy:
+         resources:
+            reservations:
+               cpus: "1"
+      environment:
+         - REDIS_URL=redis://redis:6379/0
+      depends_on:
+         - redis
 
-  frontend:
-    build: ./frontend
-    container_name: projekt-frontend
-    ports:
-      - "5173:5173"
-    volumes:
-    - ./frontend:/app
-    - /app/node_modules
-    command: npm run dev -- --host
-    depends_on:
-      - backend
+   frontend:
+      build: ./frontend
+      container_name: projekt-frontend
+      ports:
+         - "5173:5173"
+      volumes:
+         - ./frontend:/app
+         - /app/node_modules
+      command: npm run dev -- --host
+      depends_on:
+         - backend
 
+   redis:
+      image: redis:7
+      container_name: projekt-redis
+      restart: unless-stopped
+      volumes:
+         - redis-data:/data
+      healthcheck:
+         test: ["CMD", "redis-cli", "ping"]
+         interval: 10s
+         timeout: 5s
+         retries: 3
+
+volumes:
+   redis-data:
