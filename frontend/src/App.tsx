@@ -80,7 +80,7 @@ function App() {
 
       try {
          const response = await fetch(
-            "http://34.72.226.33:8000/api/prompt/stream",
+            "http://34.16.168.145:8000/api/prompt/stream",
             {
                method: "POST",
                headers: { "Content-Type": "application/json" },

@@ -24,6 +24,13 @@ spec:
          labels:
             app: backend
       spec:
+         nodeSelector:
+            accelerator: nvidia-t4
+         tolerations:
+            - key: "nvidia.com/gpu"
+              operator: "Equal"
+              value: "present"
+              effect: "NoSchedule"
          containers:
             - name: backend
               image: europe-central2-docker.pkg.dev/nomadic-memento-476510-h5/projektr/backend:latest
@@ -32,3 +39,6 @@ spec:
               env:
                  - name: REDIS_URL
                    value: "redis://redis:6379/0"
+              resources:
+                 limits:
+                    nvidia.com/gpu: 1
