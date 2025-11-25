@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 from typing import AsyncGenerator
-import unicodedata
+import torch
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,6 +38,9 @@ PROMPT_INJECTION_ATTACKS = {
     "DAN": {
         "num_prompts": 2,
     },
+    "ascii-art-jailbreak": {
+        "num_prompts": 2,
+    }
 }
 
 # helper: async generator that runs the script and yields chunks of stdout
@@ -105,6 +108,16 @@ async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | 
 
 @app.post("/api/prompt/stream")
 async def prompt_stream(request: PromptRequest):
+    # Send GPU info as first yield for all attacks
+    async def gpu_info_and_stream(generator):
+        if torch.cuda.is_available():
+            gpu_name = torch.cuda.get_device_name(0)
+            yield f"GPU name: {gpu_name}\n".encode("utf-8")
+        else:
+            yield b"No compatible GPU detected\n"
+        
+        async for chunk in generator:
+            yield chunk
 
     # Attack: prompt-injection flows use the same script but different modes/lengths.
     if request.attack in PROMPT_INJECTION_ATTACKS:
@@ -127,7 +140,7 @@ async def prompt_stream(request: PromptRequest):
         numOfPrompts = int(entry.get("num_prompts", 1))
         generator = _run_script_and_stream(cmd, numOfPrompts=numOfPrompts, env=env)
         # StreamingResponse sends bytes to the client as they are yielded
-        return StreamingResponse(generator, media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
 
     if (request.attack == "fcb-bias_guided"):
         # Build command using the same Python interpreter
@@ -143,7 +156,22 @@ async def prompt_stream(request: PromptRequest):
         env["PYTHONUNBUFFERED"] = "1"
         generator = _run_script_and_stream(cmd, env=env, numOfPrompts=1)
         # StreamingResponse sends bytes to the client as they are yielded
-        return StreamingResponse(generator, media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
+
+    if(request.attack == "none"):
+        # No special attack selected → go through defenses + model directly
+        blocked, resp = await apply_defense(
+            defense=request.defense,
+            prompt=request.prompt,
+            model_id=request.model,
+            device="cuda" if torch.cuda.is_available() else "cpu",
+            generation_options={},
+            session_id=None,
+        )
+        # Wrap with GPU info
+        if resp and isinstance(resp, StreamingResponse):
+            return StreamingResponse(gpu_info_and_stream(resp.body_iterator), media_type="text/plain; charset=utf-8")
+        return resp
 
     # return a single small stream
     async def just_return() -> AsyncGenerator[bytes, None]:

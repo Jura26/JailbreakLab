@@ -17,14 +17,14 @@ services:
          - redis
 
    frontend:
-      build: ./frontend
+      image: node:20-alpine
       container_name: projekt-frontend
+      working_dir: /app
       ports:
          - "5173:5173"
       volumes:
          - ./frontend:/app
-         - /app/node_modules
-      command: npm run dev -- --host
+      command: npm run dev -- --host 0.0.0.0
       depends_on:
          - backend
 

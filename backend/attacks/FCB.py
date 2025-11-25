@@ -497,11 +497,9 @@ if __name__ == "__main__":
     
     # Device setup with memory check
     if torch.cuda.is_available():
-        print("GPU name:", torch.cuda.get_device_name(0))
         device = "cuda"
         torch.cuda.empty_cache()
     else:
-        print("No compatible GPU detected")
         device = "cpu"
     
     # Run with defense check

@@ -3,6 +3,7 @@ from typing import Optional, Dict, AsyncIterable
 from fastapi.responses import StreamingResponse
 from . import input_sanitization  # import your defense module
 from .MaskedDefender import masked_defender
+from . import output_filtering
 
 # Local import of model runner (relative to package)
 try:
@@ -29,7 +30,7 @@ except Exception:
 DEFENSES = {
     "input_sanitization": input_sanitization.run,
     "masked_defender": masked_defender.run,
-    # You can add more later, e.g. "ml_filter": ml_filter.run
+    "output_filtering": output_filtering.run,
 }
 
 
@@ -128,6 +129,11 @@ async def apply_defense(
                 pass
 
         resp = await generate_streaming(model_id=model_id, prompt=augmented_prompt, device=device, generation_options=generation_options)
+
+        # Apply output filtering if selected
+        if defense == "output_filtering" and isinstance(resp, StreamingResponse):
+            filtered_iterator = output_filtering.filter_output_stream(resp.body_iterator)
+            resp = StreamingResponse(filtered_iterator, media_type=getattr(resp, 'media_type', 'text/plain'))
 
         # If we have a session id and are storing history, wrap the response iterator
         # to capture assistant output and persist it when streaming completes.

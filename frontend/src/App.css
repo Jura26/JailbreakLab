@@ -64,11 +64,36 @@ body {
    background: rgba(148, 163, 184, 0.5);
 }
 
+/* Custom scrollbar styles for modal */
+.custom-scrollbar::-webkit-scrollbar {
+   width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+   background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+   background: rgba(99, 102, 241, 0.3);
+   border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+   background: rgba(99, 102, 241, 0.5);
+}
+
 /* Smooth transitions */
 select,
 textarea,
 button {
    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure key UI buttons show pointer cursor */
+.info-button,
+.close-button,
+.got-it-button {
+   cursor: pointer;
 }
 
 /* Focus states */
@@ -100,6 +125,18 @@ textarea:focus {
    }
    100% {
       background-position: 1000px 0;
+   }
+}
+
+/* Added slide-up animation for modal */
+@keyframes slideUp {
+   from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
    }
 }
 
