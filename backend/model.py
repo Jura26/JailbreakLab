@@ -18,25 +18,35 @@ def get_model_and_tokenizer(model_id: str, device: str = "cpu"):
     """
     key = f"{model_id}:{device}"
     if key in _MODEL_CACHE:
+        print(f"Using cached model: {model_id}")
         return _MODEL_CACHE[key]
 
+    print(f"Loading model {model_id} from HuggingFace (this may take a while)...")
     dtype = torch.float16 if (device == "cuda" and torch.cuda.is_available()) else torch.float32
 
-    # Load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    if getattr(tokenizer, "pad_token_id", None) is None:
-        tokenizer.pad_token_id = tokenizer.eos_token_id
+    try:
+        # Load tokenizer
+        print(f"Loading tokenizer for {model_id}...")
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        if getattr(tokenizer, "pad_token_id", None) is None:
+            tokenizer.pad_token_id = tokenizer.eos_token_id
+        print(f"Tokenizer loaded successfully")
 
-    # Load or reuse model
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        dtype=dtype,
-        device_map="auto" if (device == "cuda" and torch.cuda.is_available()) else None,
-    )
+        # Load or reuse model
+        print(f"Loading model weights for {model_id}...")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            dtype=dtype,
+            device_map="auto" if (device == "cuda" and torch.cuda.is_available()) else None,
+        )
+        print(f"Model {model_id} loaded successfully")
 
-    model.eval()
-    _MODEL_CACHE[key] = (tokenizer, model)
-    return tokenizer, model
+        model.eval()
+        _MODEL_CACHE[key] = (tokenizer, model)
+        return tokenizer, model
+    except Exception as e:
+        print(f"Failed to load model {model_id}: {e}")
+        raise
 
 
 async def _generate_and_stream(tokenizer, model, prompt: str, generation_options: Dict) -> StreamingResponse:
@@ -108,5 +118,23 @@ async def generate_streaming(model_id: str, prompt: str, device: str = "cpu", ge
     if generation_options is None:
         generation_options = {}
 
-    tokenizer, model = get_model_and_tokenizer(model_id, device)
-    return await _generate_and_stream(tokenizer, model, prompt, generation_options)
+    async def _stream_with_loading():
+        # Yield early progress markers while loading model
+        yield b"[PROGRESS] 0\n"
+        
+        # Load model in thread to avoid blocking
+        loop = asyncio.get_running_loop()
+        
+        def _load_model():
+            return get_model_and_tokenizer(model_id, device)
+        
+        yield b"[PROGRESS] 5\n"
+        tokenizer, model = await loop.run_in_executor(None, _load_model)
+        yield b"[PROGRESS] 8\n"
+        
+        # Now stream generation results
+        resp = await _generate_and_stream(tokenizer, model, prompt, generation_options)
+        async for chunk in resp.body_iterator:
+            yield chunk
+    
+    return StreamingResponse(_stream_with_loading(), media_type="text/plain")

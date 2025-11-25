@@ -6,20 +6,44 @@ import asyncio
 from typing import AsyncGenerator
 import torch
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from defenses.defense_manager import *
 app = FastAPI()
+
+# CORS middleware must be added before routes
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add middleware to log all requests
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"{request.method} {request.url.path} from {request.client.host}")
+    try:
+        response = await call_next(request)
+        print(f"Response status: {response.status_code}")
+        return response
+    except Exception as e:
+        print(f"Error processing request: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "Backend is running"}
+
+@app.options("/api/prompt/stream")
+async def options_prompt_stream():
+    return {"status": "ok"}
 
 class PromptRequest(BaseModel):
     prompt: str
@@ -108,14 +132,18 @@ async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | 
 
 @app.post("/api/prompt/stream")
 async def prompt_stream(request: PromptRequest):
+    print(f"POST received - Model: {request.model}, Attack: {request.attack}, Defense: {request.defense}")
+    
     # Send GPU info as first yield for all attacks
     async def gpu_info_and_stream(generator):
+        # Send GPU info IMMEDIATELY before waiting for generator
         if torch.cuda.is_available():
             gpu_name = torch.cuda.get_device_name(0)
             yield f"GPU name: {gpu_name}\n".encode("utf-8")
         else:
             yield b"No compatible GPU detected\n"
         
+        # Now stream the rest from the generator
         async for chunk in generator:
             yield chunk
 
@@ -160,18 +188,41 @@ async def prompt_stream(request: PromptRequest):
 
     if(request.attack == "none"):
         # No special attack selected → go through defenses + model directly
-        blocked, resp = await apply_defense(
-            defense=request.defense,
-            prompt=request.prompt,
-            model_id=request.model,
-            device="cuda" if torch.cuda.is_available() else "cpu",
-            generation_options={},
-            session_id=None,
-        )
-        # Wrap with GPU info
-        if resp and isinstance(resp, StreamingResponse):
-            return StreamingResponse(gpu_info_and_stream(resp.body_iterator), media_type="text/plain; charset=utf-8")
-        return resp
+        async def stream_with_gpu_info():
+            # Send GPU info FIRST before any processing
+            if torch.cuda.is_available():
+                gpu_name = torch.cuda.get_device_name(0)
+                yield f"GPU name: {gpu_name}\n".encode("utf-8")
+            else:
+                yield b"No compatible GPU detected\n"
+            
+            # Now do the expensive work
+            try:
+                print(f"Starting model load: {request.model}")
+                blocked, resp = await apply_defense(
+                    defense=request.defense,
+                    prompt=request.prompt,
+                    model_id=request.model,
+                    device="cuda" if torch.cuda.is_available() else "cpu",
+                    generation_options={},
+                    session_id=None,
+                )
+                print(f"Model processing complete, blocked: {blocked}")
+                
+                # Stream the response
+                if resp and isinstance(resp, StreamingResponse):
+                    async for chunk in resp.body_iterator:
+                        yield chunk
+                elif resp:
+                    yield str(resp).encode("utf-8")
+            except Exception as e:
+                print(f"ERROR in model processing: {e}")
+                import traceback
+                traceback.print_exc()
+                yield f"Error: {str(e)}\n".encode("utf-8")
+                yield b"Model loading failed. Check backend logs.\n"
+        
+        return StreamingResponse(stream_with_gpu_info(), media_type="text/plain; charset=utf-8")
 
     # return a single small stream
     async def just_return() -> AsyncGenerator[bytes, None]:

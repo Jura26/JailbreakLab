@@ -39,7 +39,14 @@ async def main(model_id: str, template: str, print_output: bool, defense: str) -
 
     # Request the defense manager to either block or run the model for us.
     print("[PROGRESS] 10", flush=True)
-    blocked, resp = await apply_defense(defense, template, model_id=model_id, device=device)
+    
+    try:
+        blocked, resp = await apply_defense(defense, template, model_id=model_id, device=device)
+    except Exception as e:
+        print(f"Error loading/running model {model_id}: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return None
 
     if blocked:
         # defense blocked the prompt; return the StreamingResponse so callers can handle it

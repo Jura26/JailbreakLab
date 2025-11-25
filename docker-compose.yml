@@ -24,7 +24,8 @@ services:
          - "5173:5173"
       volumes:
          - ./frontend:/app
-      command: npm run dev -- --host 0.0.0.0
+         - /app/node_modules
+      command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
       depends_on:
          - backend
 
