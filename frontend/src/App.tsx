@@ -91,7 +91,7 @@ function App() {
 
       try {
          const response = await fetch(
-            "http://34.26.67.73:8000/api/prompt/stream",
+            "http://localhost:8000/api/prompt/stream",
             {
                method: "POST",
                headers: { "Content-Type": "application/json" },
