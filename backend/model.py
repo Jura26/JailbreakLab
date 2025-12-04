@@ -18,34 +18,26 @@ def get_model_and_tokenizer(model_id: str, device: str = "cpu"):
     """
     key = f"{model_id}:{device}"
     if key in _MODEL_CACHE:
-        print(f"Using cached model: {model_id}")
         return _MODEL_CACHE[key]
 
-    print(f"Loading model {model_id} from HuggingFace (this may take a while)...")
     dtype = torch.float16 if (device == "cuda" and torch.cuda.is_available()) else torch.float32
 
     try:
-        # Load tokenizer
-        print(f"Loading tokenizer for {model_id}...")
         tokenizer = AutoTokenizer.from_pretrained(model_id)
         if getattr(tokenizer, "pad_token_id", None) is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
-        print(f"Tokenizer loaded successfully")
 
         # Load or reuse model
-        print(f"Loading model weights for {model_id}...")
         model = AutoModelForCausalLM.from_pretrained(
             model_id,
             dtype=dtype,
             device_map="auto" if (device == "cuda" and torch.cuda.is_available()) else None,
         )
-        print(f"Model {model_id} loaded successfully")
 
         model.eval()
         _MODEL_CACHE[key] = (tokenizer, model)
         return tokenizer, model
     except Exception as e:
-        print(f"Failed to load model {model_id}: {e}")
         raise
 
 
@@ -57,7 +49,7 @@ async def _generate_and_stream(tokenizer, model, prompt: str, generation_options
     async def _aiter():
         # Run generation in a thread to avoid blocking async loop
         loop = asyncio.get_running_loop()
-        
+
         yield b"[PROGRESS] 10\n"
 
         def _run():

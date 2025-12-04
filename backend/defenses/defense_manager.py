@@ -2,6 +2,7 @@
 from typing import Optional, Dict, AsyncIterable
 from fastapi.responses import StreamingResponse
 from . import input_sanitization  # import your defense module
+from . import system_prompt_hardening
 from .MaskedDefender import masked_defender
 from . import output_filtering
 
@@ -31,6 +32,7 @@ DEFENSES = {
     "input_sanitization": input_sanitization.run,
     "masked_defender": masked_defender.run,
     "output_filtering": output_filtering.run,
+    "system_prompt_hardening": system_prompt_hardening.run,
 }
 
 
@@ -119,6 +121,10 @@ async def apply_defense(
             augmented_prompt = f"{context_prefix}\n\nUser: {prompt}"
         else:
             augmented_prompt = prompt
+
+        # Apply system prompt hardening if selected
+        if defense == "system_prompt_hardening":
+            augmented_prompt = system_prompt_hardening.apply_system_prompt_hardening(augmented_prompt)
 
         # store the user message into history (after defenses passed) so it's available
         # for subsequent calls; don't block on failures
