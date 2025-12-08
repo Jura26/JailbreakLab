@@ -25,7 +25,7 @@ spec:
             app: backend
       spec:
          nodeSelector:
-            accelerator: nvidia-t4
+            accelerator: nvidia-l4
          tolerations:
             - key: "nvidia.com/gpu"
               operator: "Equal"

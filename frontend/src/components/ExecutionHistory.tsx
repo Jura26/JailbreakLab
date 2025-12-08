@@ -36,120 +36,122 @@ export default function ExecutionHistory({
                   </div>
                </div>
             ) : (
-               prompts.map((prompt, idx) => (
-                  <div
-                     key={idx}
-                     className="bg-[#252532]/60 rounded-lg p-3 border border-[#2d2d3d] hover:border-[#3d3d4d] transition-all duration-200 animate-fade-in"
-                  >
-                     <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
-                        <div className="flex items-center gap-2">
-                           {prompt.isBlocked ||
-                           (prompt.scriptOutput || "").startsWith("Error:") ||
-                           (prompt.scriptOutput || "").includes(
-                              "Manually canceled"
-                           ) ? (
-                              <div className="bg-[#ef4444]/10 p-1 rounded border border-[#ef4444]/20">
-                                 <XCircle
-                                    className="text-[#ef4444]"
-                                    size={14}
-                                 />
-                              </div>
-                           ) : prompt.progress === 100 ? (
-                              <div className="bg-[#10b981]/10 p-1 rounded border border-[#10b981]/20">
-                                 <CheckCircle
-                                    className="text-[#10b981]"
-                                    size={14}
-                                 />
-                              </div>
-                           ) : (
-                              <div className="w-5 h-5 rounded border-2 border-[#6366f1] border-t-transparent animate-spin" />
-                           )}
+               prompts.map((prompt, idx) => {
+                  const scriptOutput = prompt.scriptOutput || "";
+                  const wasCanceled =
+                     scriptOutput.includes("Manually canceled");
+                  const hadError = scriptOutput.startsWith("Error:");
+                  const isFinal =
+                     (typeof prompt.progress === "number" &&
+                        prompt.progress >= 100) ||
+                     wasCanceled ||
+                     hadError;
+                  // Consider failed only when blocked OR when processing finished and attackSuccess is false
+                  const isFailed =
+                     prompt.isBlocked ||
+                     (isFinal && !prompt.attackSuccess) ||
+                     wasCanceled ||
+                     hadError;
 
-                           <span className="text-xs text-[#94a3b8] font-mono">
-                              {prompt.timestamp}
-                           </span>
-                        </div>
+                  return (
+                     <div
+                        key={idx}
+                        className="bg-[#252532]/60 rounded-lg p-3 border border-[#2d2d3d] hover:border-[#3d3d4d] transition-all duration-200 animate-fade-in"
+                     >
+                        <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                           <div className="flex items-center gap-2">
+                              {prompt.progress < 100 && !wasCanceled ? (
+                                 <div className="w-5 h-5 rounded border-2 border-[#6366f1] border-t-transparent animate-spin" />
+                              ) : isFailed ? (
+                                 <div className="bg-[#ef4444]/10 p-1 rounded border border-[#ef4444]/20">
+                                    <XCircle
+                                       className="text-[#ef4444]"
+                                       size={14}
+                                    />
+                                 </div>
+                              ) : (
+                                 <div className="bg-[#10b981]/10 p-1 rounded border border-[#10b981]/20">
+                                    <CheckCircle
+                                       className="text-[#10b981]"
+                                       size={14}
+                                    />
+                                 </div>
+                              )}
 
-                        <div className="flex flex-wrap gap-1.5 text-xs">
-                           {prompt.gpuInfo && (
-                              <span className="px-2 py-0.5 bg-[#f59e0b]/10 text-[#f59e0b] rounded border border-[#f59e0b]/20 font-medium">
-                                 {prompt.gpuInfo}
+                              <span className="text-xs text-[#94a3b8] font-mono">
+                                 {prompt.timestamp}
                               </span>
-                           )}
-                           <span className="px-2 py-0.5 bg-[#ef4444]/10 text-[#ef4444] rounded border border-[#ef4444]/20 font-medium">
-                              {prompt.attack.name}
-                           </span>
-                           <span className="px-2 py-0.5 bg-[#10b981]/10 text-[#10b981] rounded border border-[#10b981]/20 font-medium">
-                              {prompt.defense.name}
-                           </span>
-                           <span className="px-2 py-0.5 bg-[#3b82f6]/10 text-[#3b82f6] rounded border border-[#3b82f6]/20 font-medium">
-                              {prompt.model.name}
-                           </span>
+                           </div>
+
+                           <div className="flex items-center flex-wrap gap-1.5 text-xs">
+                              {prompt.gpuInfo && (
+                                 <span className="px-2 py-0.5 bg-[#f59e0b]/10 text-[#f59e0b] rounded border border-[#f59e0b]/20 font-medium">
+                                    {prompt.gpuInfo}
+                                 </span>
+                              )}
+                              <span className="px-2 py-0.5 bg-[#ef4444]/10 text-[#ef4444] rounded border border-[#ef4444]/20 font-medium">
+                                 {prompt.attack.name}
+                              </span>
+                              <span className="px-2 py-0.5 bg-[#10b981]/10 text-[#10b981] rounded border border-[#10b981]/20 font-medium">
+                                 {prompt.defense.name}
+                              </span>
+                              <span className="px-2 py-0.5 bg-[#3b82f6]/10 text-[#3b82f6] rounded border border-[#3b82f6]/20 font-medium">
+                                 {prompt.model.name}
+                              </span>
+                              {/* Cancel button for running attack - show immediately */}
+                              {isExecuting && idx === prompts.length - 1 && (
+                                 <button
+                                    onClick={onCancel}
+                                    className="ml-1 bg-gradient-to-r from-[#ef4444] to-[#dc2626] hover:from-[#dc2626] hover:to-[#b91c1c] text-white px-3 py-0.5 rounded border border-[#ef4444]/20 font-bold transition-all duration-200 flex items-center gap-1.5 shadow-lg hover:shadow-[#ef4444]/20 hover:shadow-xl active:scale-95"
+                                 >
+                                    <X size={14} />
+                                    <span>Cancel</span>
+                                 </button>
+                              )}
+                           </div>
                         </div>
-                     </div>
 
-                     <p className="text-[#f8fafc] text-base leading-relaxed mb-2 break-words">
-                        {prompt.text}
-                     </p>
+                        <p className="text-[#f8fafc] text-base leading-relaxed mb-2 break-words">
+                           {prompt.text}
+                        </p>
 
-                     {prompt.progress !== undefined && (
-                        <div className="w-full bg-[#2d2d3d] rounded-full h-1.5 mb-2 overflow-hidden">
+                        {prompt.progress !== undefined && (
+                           <div className="w-full bg-[#2d2d3d] rounded-full h-1.5 mb-2 overflow-hidden">
+                              <div
+                                 className={`h-full rounded-full transition-all duration-300 ${
+                                    isFailed
+                                       ? "bg-gradient-to-r from-[#ef4444] to-[#dc2626]"
+                                       : "bg-gradient-to-r from-[#10b981] to-[#059669]"
+                                 }`}
+                                 style={{
+                                    width: `${prompt.progress}%`,
+                                 }}
+                              />
+                           </div>
+                        )}
+
+                        {prompt.scriptOutput && (
                            <div
-                              className={`h-full rounded-full transition-all duration-300 ${
-                                 prompt.isBlocked
-                                    ? "bg-gradient-to-r from-[#ef4444] to-[#dc2626]"
-                                    : "bg-gradient-to-r from-[#10b981] to-[#059669]"
-                              }`}
-                              style={{
-                                 width: `${prompt.progress}%`,
-                              }}
-                           />
-                        </div>
-                     )}
-
-                     {prompt.scriptOutput && (
-                        <div
-                           className={`rounded-lg p-2 border ${
-                              prompt.isBlocked ||
-                              (prompt.scriptOutput || "").startsWith(
-                                 "Error:"
-                              ) ||
-                              (prompt.scriptOutput || "").includes(
-                                 "Manually canceled"
-                              )
-                                 ? "bg-[#ef4444]/5 border-[#ef4444]/20"
-                                 : "bg-[#10b981]/5 border-[#10b981]/20"
-                           }`}
-                        >
-                           <pre
-                              className={`text-sm font-mono whitespace-pre-wrap break-words ${
-                                 prompt.isBlocked ||
-                                 (prompt.scriptOutput || "").startsWith(
-                                    "Error:"
-                                 ) ||
-                                 (prompt.scriptOutput || "").includes(
-                                    "Manually canceled"
-                                 )
-                                    ? "text-[#fca5a5]"
-                                    : "text-[#6ee7b7]"
+                              className={`rounded-lg p-2 border ${
+                                 isFailed
+                                    ? "bg-[#ef4444]/5 border-[#ef4444]/20"
+                                    : "bg-[#10b981]/5 border-[#10b981]/20"
                               }`}
                            >
-                              {prompt.scriptOutput}
-                           </pre>
-                           {/* Cancel button for running attack */}
-                           {isExecuting && idx === prompts.length - 1 && (
-                              <button
-                                 onClick={onCancel}
-                                 className="mt-2 bg-gradient-to-r from-[#ef4444] to-[#dc2626] hover:from-[#dc2626] hover:to-[#b91c1c] text-white px-4 py-1 rounded-lg font-bold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-[#ef4444]/20 hover:shadow-2xl active:scale-95 text-sm"
+                              <pre
+                                 className={`text-sm font-mono whitespace-pre-wrap break-words ${
+                                    isFailed
+                                       ? "text-[#fca5a5]"
+                                       : "text-[#6ee7b7]"
+                                 }`}
                               >
-                                 <X size={16} />
-                                 <span>Cancel</span>
-                              </button>
-                           )}
-                        </div>
-                     )}
-                  </div>
-               ))
+                                 {prompt.scriptOutput}
+                              </pre>
+                           </div>
+                        )}
+                     </div>
+                  );
+               })
             )}
          </div>
       </div>

@@ -27,7 +27,8 @@ export interface Prompt {
    defense: Defense;
    model: Model;
    scriptOutput: string;
-   progress?: number;
+   isBlocked: boolean;
+   attackSuccess: boolean;
+   progress: number;
    gpuInfo?: string;
-   isBlocked?: boolean;
 }

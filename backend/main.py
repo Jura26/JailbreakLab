@@ -12,12 +12,22 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from defenses.defense_manager import *
+
+# Import attack functions for in-process execution (no subprocess)
+from attacks.promptInjection import (
+    run_role_playing_attack,
+    run_chain_of_questions_attack,
+    run_dan_attack,
+    run_ascii_art_jailbreak_attack,
+)
+from attacks.FCB import run_fcb_attack
+
 app = FastAPI()
 
 # CORS middleware must be added before routes
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,29 +55,34 @@ async def root():
 async def options_prompt_stream():
     return {"status": "ok"}
 
+@app.post("/api/test/classifier")
+async def test_classifier(request: Request):
+    """Test endpoint for attack success detection."""
+    from model import detect_attack_success
+    
+    data = await request.json()
+    text = data.get("text", "")
+    
+    if not text:
+        return {"error": "No text provided"}
+    
+    success, confidence, label = detect_attack_success(text)
+    
+    return {
+        "text_preview": text[:200] + "..." if len(text) > 200 else text,
+        "attack_success": success,
+        "confidence": confidence,
+        "label": label,
+        "interpretation": "Attack succeeded - model provided harmful content" if success else "Attack failed - model refused or gave safe response"
+    }
+
 class PromptRequest(BaseModel):
     prompt: str
     attack: str
     defense: str
     model: str
 
-# Registry for prompt-injection attack scripts and metadata
-PROMPT_INJECTION_ATTACKS = {
-    "role-playing-social-engeneering": {
-        "num_prompts": 1,
-    },
-    "chain-of-questions": {
-        "num_prompts": 9,
-    },
-    "DAN": {
-        "num_prompts": 2,
-    },
-    "ascii-art-jailbreak": {
-        "num_prompts": 2,
-    }
-}
-
-# helper: async generator that runs the script and yields chunks of stdout
+# helper: async generator that runs the script and yields chunks of stdout (used for FCB only now)
 async def _run_script_and_stream(cmd: list[str], numOfPrompts: int, env: dict | None = None) -> AsyncGenerator[bytes, None]:
     proc = await asyncio.create_subprocess_exec(
         *cmd,
@@ -147,43 +162,46 @@ async def prompt_stream(request: PromptRequest):
         async for chunk in generator:
             yield chunk
 
-    # Attack: prompt-injection flows use the same script but different modes/lengths.
-    if request.attack in PROMPT_INJECTION_ATTACKS:
-        entry = PROMPT_INJECTION_ATTACKS[request.attack]
-
-        # Build command using the same Python interpreter
-        cmd = [
-            sys.executable,
-            "./attacks/promptInjection.py",
-            "--model_id", request.model,
-            "--template", request.prompt,
-            "--prompt_type", request.attack,
-            "--defense_type", request.defense
-        ]
-
-        # ensure python subprocess does not buffer output
-        env = os.environ.copy()
-        env["PYTHONUNBUFFERED"] = "1"
-
-        numOfPrompts = int(entry.get("num_prompts", 1))
-        generator = _run_script_and_stream(cmd, numOfPrompts=numOfPrompts, env=env)
-        # StreamingResponse sends bytes to the client as they are yielded
+    # Attack: prompt-injection flows - now run in-process (no subprocess)
+    if request.attack == "role-playing-social-engeneering":
+        generator = run_role_playing_attack(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense
+        )
+        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
+    
+    if request.attack == "chain-of-questions":
+        generator = run_chain_of_questions_attack(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense
+        )
+        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
+    
+    if request.attack == "DAN":
+        generator = run_dan_attack(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense
+        )
+        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
+    
+    if request.attack == "ascii-art-jailbreak":
+        generator = run_ascii_art_jailbreak_attack(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense
+        )
         return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
 
-    if (request.attack == "fcb-bias_guided"):
-        # Build command using the same Python interpreter
-        cmd = [
-            sys.executable,
-            "./attacks/FCB.py",
-            "--model_id", request.model,
-            "--template", request.prompt,
-            "--defense_type", request.defense
-        ]
-        # ensure python subprocess does not buffer output
-        env = os.environ.copy()
-        env["PYTHONUNBUFFERED"] = "1"
-        generator = _run_script_and_stream(cmd, env=env, numOfPrompts=1)
-        # StreamingResponse sends bytes to the client as they are yielded
+    # FCB attack now runs in-process (reuses model cache)
+    if request.attack == "fcb-bias_guided":
+        generator = run_fcb_attack(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense
+        )
         return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
 
     if(request.attack == "none"):

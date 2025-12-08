@@ -4,7 +4,6 @@ from fastapi.responses import StreamingResponse
 from . import input_sanitization  # import your defense module
 from . import system_prompt_hardening
 from .MaskedDefender import masked_defender
-from . import output_filtering
 
 # Local import of model runner (relative to package)
 try:
@@ -31,7 +30,6 @@ except Exception:
 DEFENSES = {
     "input_sanitization": input_sanitization.run,
     "masked_defender": masked_defender.run,
-    "output_filtering": output_filtering.run,
     "system_prompt_hardening": system_prompt_hardening.run,
 }
 
@@ -61,7 +59,6 @@ async def _capture_and_forward(body_iterator: AsyncIterable, session_id: Optiona
             # never raise while streaming
             pass
 
-
 async def apply_defense(
     defense: str,
     prompt: str,
@@ -75,28 +72,14 @@ async def apply_defense(
     Runs the selected defense. If the defense blocks the prompt, returns a StreamingResponse
     (blocking message). If not blocked and `model_id` is provided, runs the model via
     the centralized `generate_streaming` and returns its StreamingResponse.
-
-    This variant supports an optional Redis-based recent-history cache. When a
-    `session_id` is supplied, `apply_defense` will:
-      - build a compact summary of older messages and include recent messages
-        as a context prefix to the model prompt
-      - append the user message to history (after defenses pass)
-      - capture the assistant response and persist it to history when streaming completes
-
-    Returns:
-      (blocked: bool, streaming_response_or_block: Optional[StreamingResponse])
     """
     defense_func = DEFENSES.get(defense)
     if defense_func:
-        # defense functions are expected to return a StreamingResponse when blocking
         blocked_resp = await defense_func(prompt)
         if blocked_resp:
-            # signal that defense blocked the prompt
             return True, blocked_resp
 
-    # If a model_id is provided, run the model and return its StreamingResponse (not a block)
     if model_id:
-        # Prepare context from history (excluding current prompt)
         prefix_parts = []
         try:
             if session_id:
@@ -113,7 +96,6 @@ async def apply_defense(
                         recent_lines.append(f"{label}: {text}")
                     prefix_parts.append("Recent messages:\n" + "\n".join(recent_lines))
         except Exception:
-            # if history cache fails, proceed without context
             prefix_parts = []
 
         context_prefix = "\n\n".join(prefix_parts).strip()
@@ -122,12 +104,9 @@ async def apply_defense(
         else:
             augmented_prompt = prompt
 
-        # Apply system prompt hardening if selected
         if defense == "system_prompt_hardening":
             augmented_prompt = system_prompt_hardening.apply_system_prompt_hardening(augmented_prompt)
 
-        # store the user message into history (after defenses passed) so it's available
-        # for subsequent calls; don't block on failures
         if session_id and store_history:
             try:
                 add_message(session_id, 'user', prompt)
@@ -136,17 +115,10 @@ async def apply_defense(
 
         resp = await generate_streaming(model_id=model_id, prompt=augmented_prompt, device=device, generation_options=generation_options)
 
-        # Apply output filtering if selected
-        if defense == "output_filtering" and isinstance(resp, StreamingResponse):
-            filtered_iterator = output_filtering.filter_output_stream(resp.body_iterator)
-            resp = StreamingResponse(filtered_iterator, media_type=getattr(resp, 'media_type', 'text/plain'))
-
-        # If we have a session id and are storing history, wrap the response iterator
-        # to capture assistant output and persist it when streaming completes.
+        # capture assistant output into history when applicable
         if session_id and store_history and isinstance(resp, StreamingResponse):
             wrapped = StreamingResponse(_capture_and_forward(resp.body_iterator, session_id), media_type=getattr(resp, 'media_type', 'text/plain'))
             return False, wrapped
         return False, resp
 
-    # Passed defenses, no model requested
     return False, None

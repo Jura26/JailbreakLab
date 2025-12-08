@@ -69,6 +69,8 @@ function App() {
                model: selectedModel,
                scriptOutput: "",
                progress: 0,
+               isBlocked: false,
+               attackSuccess: false,
                gpuInfo: "",
             },
          ];
@@ -112,6 +114,7 @@ function App() {
 
          let gpuCapturedForThisPrompt = false;
          let blockedPrompt = false;
+         let iterationCount = 0;
 
          while (!done) {
             const result = await reader.read();
@@ -121,6 +124,9 @@ function App() {
                const lines = text.split("\n");
 
                for (const line of lines) {
+                  iterationCount++;
+                  console.debug(`Iteration ${iterationCount}: Processing line`);
+                  console.debug(`Line content:`, line);
                   const trimmed = line.trim();
                   if (!trimmed) continue;
 
@@ -137,6 +143,23 @@ function App() {
                      blockedPrompt = true;
                      continue;
                   }
+
+                  if (trimmed.startsWith("[ATTACK_SUCCESS]")) {
+                     const success =
+                        trimmed.replace("[ATTACK_SUCCESS]", "").trim() ===
+                        "true";
+                     setPrompts((prev) => {
+                        const copy = [...prev];
+                        if (!copy[newIndex]) return prev;
+                        copy[newIndex] = {
+                           ...copy[newIndex],
+                           attackSuccess: success,
+                        };
+                        return copy;
+                     });
+                     continue;
+                  }
+
                   if (
                      !gpuCapturedForThisPrompt &&
                      (trimmed.startsWith("No compatible GPU") ||
@@ -193,10 +216,9 @@ function App() {
             return copy;
          });
       } catch (err) {
-         console.error("Streaming error:", err);
-
-         // Check if it was cancelled
+         // Check if it was cancelled (AbortError is expected when user clicks cancel)
          if (err instanceof Error && err.name === "AbortError") {
+            // Don't log AbortError - it's expected when canceling
             setPrompts((prev) => {
                const copy = [...prev];
                if (!copy[newIndex]) return prev;
@@ -208,6 +230,8 @@ function App() {
                return copy;
             });
          } else {
+            // Log unexpected errors
+            console.error("Streaming error:", err);
             setPrompts((prev) => {
                const copy = [...prev];
                if (!copy[newIndex]) return prev;
@@ -270,7 +294,6 @@ function App() {
                      setMessage={setMessage}
                      isExecuting={isExecuting}
                      onSend={handleSend}
-                     onCancel={handleCancel}
                   />
                </div>
             </div>
