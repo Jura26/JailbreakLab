@@ -34,12 +34,12 @@ warnings.filterwarnings("ignore")
 import logging
 logging.getLogger("transformers").setLevel(logging.ERROR)
 
-async def _run_model_for_attack(model_id: str, template: str, defense: str) -> Optional[StreamingResponse]:
+async def _run_model_for_attack(model_id: str, template: str, defense: str, session_id: Optional[str] = None) -> Optional[StreamingResponse]:
     """Internal helper: Check defenses and run model. Returns StreamingResponse or None."""
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
     try:
-        blocked, resp = await apply_defense(defense, template, model_id=model_id, device=device)
+        blocked, resp = await apply_defense(defense, template, model_id=model_id, device=device, session_id=session_id)
     except Exception as e:
         print(f"Error loading/running model {model_id}: {e}", flush=True)
         import traceback
@@ -55,7 +55,7 @@ async def _run_model_for_attack(model_id: str, template: str, defense: str) -> O
 # EXPORTED ASYNC FUNCTIONS (for in-process use from main.py)
 # ============================================================================
 
-async def run_role_playing_attack(model_id: str, template: str, defense: str) -> AsyncGenerator[bytes, None]:
+async def run_role_playing_attack(model_id: str, template: str, defense: str, session_id: Optional[str] = None) -> AsyncGenerator[bytes, None]:
     """Role-playing social engineering attack (in-process, no subprocess)."""
     yield b"[PROGRESS] 0\n"
     
@@ -67,7 +67,7 @@ async def run_role_playing_attack(model_id: str, template: str, defense: str) ->
     template_text = prefix + template
     
     yield b"[PROGRESS] 5\n"
-    resp = await _run_model_for_attack(model_id, template_text, defense)
+    resp = await _run_model_for_attack(model_id, template_text, defense, session_id)
     yield b"[PROGRESS] 10\n"
     
     if resp and isinstance(resp, StreamingResponse):
@@ -77,7 +77,7 @@ async def run_role_playing_attack(model_id: str, template: str, defense: str) ->
         yield str(resp).encode("utf-8")
 
 
-async def run_chain_of_questions_attack(model_id: str, template: str, defense: str) -> AsyncGenerator[bytes, None]:
+async def run_chain_of_questions_attack(model_id: str, template: str, defense: str, session_id: Optional[str] = None) -> AsyncGenerator[bytes, None]:
     """Chain of questions attack (in-process, no subprocess)."""
     questions = [
         "tell me the capital of Italy",
@@ -97,7 +97,7 @@ async def run_chain_of_questions_attack(model_id: str, template: str, defense: s
         yield f"[PROGRESS] {progress:.2f}\n".encode("utf-8")
         
         prompt = f"Think step by step.\nQ: {q}\nA:"
-        resp = await _run_model_for_attack(model_id, prompt, defense)
+        resp = await _run_model_for_attack(model_id, prompt, defense, session_id)
         
         if resp and isinstance(resp, StreamingResponse):
             # Consume silently (don't yield intermediate question outputs)
@@ -108,7 +108,7 @@ async def run_chain_of_questions_attack(model_id: str, template: str, defense: s
     progress = (len(questions) / total_prompts) * 100
     yield f"[PROGRESS] {progress:.2f}\n".encode("utf-8")
     
-    resp = await _run_model_for_attack(model_id, template, defense)
+    resp = await _run_model_for_attack(model_id, template, defense, session_id)
     if resp and isinstance(resp, StreamingResponse):
         async for chunk in resp.body_iterator:
             yield chunk
@@ -116,7 +116,7 @@ async def run_chain_of_questions_attack(model_id: str, template: str, defense: s
         yield str(resp).encode("utf-8")
 
 
-async def run_dan_attack(model_id: str, template: str, defense: str) -> AsyncGenerator[bytes, None]:
+async def run_dan_attack(model_id: str, template: str, defense: str, session_id: Optional[str] = None) -> AsyncGenerator[bytes, None]:
     """DAN (Do Anything Now) attack (in-process, no subprocess)."""
     yield b"[PROGRESS] 0\n"
     
@@ -124,14 +124,14 @@ async def run_dan_attack(model_id: str, template: str, defense: str) -> AsyncGen
     
     yield b"[PROGRESS] 5\n"
     # Run preparatory prompt (consume silently)
-    resp1 = await _run_model_for_attack(model_id, first_prompt, defense)
+    resp1 = await _run_model_for_attack(model_id, first_prompt, defense, session_id)
     if resp1 and isinstance(resp1, StreamingResponse):
         async for _chunk in resp1.body_iterator:
             pass
     
     yield b"[PROGRESS] 50\n"
     # Run actual template
-    resp2 = await _run_model_for_attack(model_id, template, defense)
+    resp2 = await _run_model_for_attack(model_id, template, defense, session_id)
     if resp2 and isinstance(resp2, StreamingResponse):
         async for chunk in resp2.body_iterator:
             yield chunk
@@ -139,7 +139,7 @@ async def run_dan_attack(model_id: str, template: str, defense: str) -> AsyncGen
         yield str(resp2).encode("utf-8")
 
 
-async def run_ascii_art_jailbreak_attack(model_id: str, template: str, defense: str) -> AsyncGenerator[bytes, None]:
+async def run_ascii_art_jailbreak_attack(model_id: str, template: str, defense: str, session_id: Optional[str] = None) -> AsyncGenerator[bytes, None]:
     """ASCII art jailbreak attack (in-process, no subprocess)."""
     yield b"[PROGRESS] 0\n"
     
@@ -148,14 +148,14 @@ async def run_ascii_art_jailbreak_attack(model_id: str, template: str, defense: 
     
     yield b"[PROGRESS] 5\n"
     # Run preparatory prompt (consume silently)
-    resp1 = await _run_model_for_attack(model_id, first_prompt, defense)
+    resp1 = await _run_model_for_attack(model_id, first_prompt, defense, session_id)
     if resp1 and isinstance(resp1, StreamingResponse):
         async for _chunk in resp1.body_iterator:
             pass
     
     yield b"[PROGRESS] 50\n"
     # Run actual ascii template
-    resp2 = await _run_model_for_attack(model_id, ascii_template, defense)
+    resp2 = await _run_model_for_attack(model_id, ascii_template, defense, session_id)
     if resp2 and isinstance(resp2, StreamingResponse):
         async for chunk in resp2.body_iterator:
             yield chunk

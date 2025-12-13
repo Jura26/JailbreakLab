@@ -321,7 +321,7 @@ class FCBAttack:
 # EXPORTED ASYNC FUNCTION (for in-process use from main.py)
 # ============================================================================
 
-async def run_fcb_attack(model_id: str, template: str, defense: str) -> AsyncGenerator[bytes, None]:
+async def run_fcb_attack(model_id: str, template: str, defense: str, session_id: Optional[str] = None) -> AsyncGenerator[bytes, None]:
     """FCB bias-guided jailbreak attack (in-process, no subprocess).
     
     This function generates a jailbreak prompt using the FCB algorithm and then
@@ -334,7 +334,7 @@ async def run_fcb_attack(model_id: str, template: str, defense: str) -> AsyncGen
     
     # 1) Check defense on original prompt first
     yield b"[PROGRESS] 5\n"
-    blocked, blocked_response = await apply_defense(defense, template)
+    blocked, blocked_response = await apply_defense(defense, template, session_id=session_id)
     if blocked:
         yield b"Defense blocked attack prompt:\n"
         if isinstance(blocked_response, StreamingResponse):
@@ -453,7 +453,8 @@ async def run_fcb_attack(model_id: str, template: str, defense: str) -> AsyncGen
         test_prompt, 
         model_id=model_id, 
         device=device, 
-        generation_options=generation_options
+        generation_options=generation_options,
+        session_id=session_id
     )
     
     yield b"[PROGRESS] 95\n"
@@ -588,7 +589,7 @@ async def main_with_defense(model_id: str, template: str, defense: str, device: 
     }
 
     # apply_defense will run defenses and then call the model runner when model_id is provided
-    blocked, final_resp = await apply_defense(defense, test_prompt, model_id=model_id, device=device, generation_options=generation_options)
+    blocked, final_resp = await apply_defense(defense, test_prompt, model_id=model_id, device=device, generation_options=generation_options, session_id=session_id)
 
     print("[PROGRESS] 95")
 

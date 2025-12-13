@@ -11,6 +11,9 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from fastapi.responses import StreamingResponse
 
+# Import history cache for session tracking
+from history_cache import add_message
+
 # Simple cache to avoid re-loading models repeatedly
 _MODEL_CACHE: Dict[str, Tuple[AutoTokenizer, AutoModelForCausalLM]] = {}
 _SAFETY_CLASSIFIER = None
@@ -131,9 +134,16 @@ def get_model_and_tokenizer(model_id: str, device: str = "cpu"):
         raise
 
 
-async def _generate_and_stream(tokenizer, model, prompt: str, generation_options: Dict) -> StreamingResponse:
+async def _generate_and_stream(tokenizer, model, prompt: str, generation_options: Dict, session_id: Optional[str] = None) -> StreamingResponse:
     """Run generation synchronously but expose results as an async stream (yields one chunk).
     This keeps the StreamingResponse interface while keeping implementation simple.
+    
+    Args:
+        tokenizer: HuggingFace tokenizer
+        model: HuggingFace model
+        prompt: Input prompt
+        generation_options: Generation parameters
+        session_id: Session ID for history logging
     """
 
     async def _aiter():
@@ -190,24 +200,40 @@ async def _generate_and_stream(tokenizer, model, prompt: str, generation_options
         text = await loop.run_in_executor(None, _run)
         yield b"[PROGRESS] 95\n"
         
+        # Log assistant response to history
+        if session_id:
+            try:
+                add_message(session_id, "assistant", text)
+            except Exception as e:
+                print(f"Warning: Could not log assistant message to history: {e}")
+        
         # Detect attack success
         success, confidence, label = detect_attack_success(text)
         
         # Send detection result as metadata
         detection_line = f"[ATTACK_SUCCESS] {str(success).lower()}\n"
         yield detection_line.encode("utf-8")
-        
         # Send the generated text
         yield text.encode("utf-8")
 
     return StreamingResponse(_aiter(), media_type="text/plain")
 
 
-async def generate_streaming(model_id: str, prompt: str, device: str = "cpu", generation_options: Optional[Dict] = None) -> StreamingResponse:
+async def generate_streaming(model_id: str, prompt: str, device: str = "cpu", generation_options: Optional[Dict] = None, session_id: Optional[str] = None) -> StreamingResponse:
     """Public helper to generate text for `prompt` using `model_id` and return a StreamingResponse.
+    
+    Args:
+        model_id: HuggingFace model identifier
+        prompt: Input prompt text
+        device: "cpu" or "cuda"
+        generation_options: Dict with generation parameters
+        session_id: Unique session identifier for history tracking
     """
     if generation_options is None:
         generation_options = {}
+
+    # Log user message to history is handled by defense_manager or caller
+    # to avoid logging augmented prompts.
 
     async def _stream_with_loading():
         # Yield early progress markers while loading model
@@ -224,7 +250,7 @@ async def generate_streaming(model_id: str, prompt: str, device: str = "cpu", ge
         yield b"[PROGRESS] 8\n"
         
         # Now stream generation results
-        resp = await _generate_and_stream(tokenizer, model, prompt, generation_options)
+        resp = await _generate_and_stream(tokenizer, model, prompt, generation_options, session_id)
         async for chunk in resp.body_iterator:
             yield chunk
     

@@ -22,10 +22,16 @@ def _get_redis_client():
     return _redis_client
 
 
-def add_message(session_id: Optional[str], role: str, text: str) -> None:
+def add_message(session_id: Optional[str], role: str, text: str, ttl_seconds: int = 86400) -> None:
     """Append a message to the Redis-backed session history list.
 
     Each entry is stored as a small JSON blob with timestamp, role and text.
+    
+    Args:
+        session_id: Unique session identifier
+        role: Message role ("user" or "assistant")
+        text: Message content
+        ttl_seconds: Time-to-live in seconds (default 86400 = 1 day)
     """
     if not session_id:
         return
@@ -35,6 +41,8 @@ def add_message(session_id: Optional[str], role: str, text: str) -> None:
     # Keep history bounded
     r.rpush(key, entry)
     r.ltrim(key, -200, -1)
+    # Set TTL to auto-expire inactive sessions
+    r.expire(key, ttl_seconds)
 
 
 def get_recent(session_id: Optional[str], limit_messages: int = 5) -> List[Dict]:

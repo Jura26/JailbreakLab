@@ -4,6 +4,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 from typing import AsyncGenerator
+import uuid
 import torch
 
 from fastapi import FastAPI, Request
@@ -12,6 +13,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from defenses.defense_manager import *
+from history_cache import clear_history
 
 # Import attack functions for in-process execution (no subprocess)
 from attacks.promptInjection import (
@@ -150,7 +152,7 @@ async def prompt_stream(request: PromptRequest):
     print(f"POST received - Model: {request.model}, Attack: {request.attack}, Defense: {request.defense}")
     
     # Send GPU info as first yield for all attacks
-    async def gpu_info_and_stream(generator):
+    async def gpu_info_and_stream(generator, session_id_to_clear: str = None):
         # Send GPU info IMMEDIATELY before waiting for generator
         if torch.cuda.is_available():
             gpu_name = torch.cuda.get_device_name(0)
@@ -159,53 +161,72 @@ async def prompt_stream(request: PromptRequest):
             yield b"No compatible GPU detected\n"
         
         # Now stream the rest from the generator
-        async for chunk in generator:
-            yield chunk
+        try:
+            async for chunk in generator:
+                yield chunk
+        finally:
+            # Cleanup history after stream finishes
+            if session_id_to_clear:
+                try:
+                    clear_history(session_id_to_clear)
+                except Exception as e:
+                    print(f"Error clearing history for {session_id_to_clear}: {e}")
 
     # Attack: prompt-injection flows - now run in-process (no subprocess)
     if request.attack == "role-playing-social-engeneering":
+        session_id = uuid.uuid4().hex  # unique session per attack
         generator = run_role_playing_attack(
             model_id=request.model,
             template=request.prompt,
-            defense=request.defense
+            defense=request.defense,
+            session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
     
     if request.attack == "chain-of-questions":
+        session_id = uuid.uuid4().hex  # unique session per attack
         generator = run_chain_of_questions_attack(
             model_id=request.model,
             template=request.prompt,
-            defense=request.defense
+            defense=request.defense,
+            session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
     
     if request.attack == "DAN":
+        session_id = uuid.uuid4().hex  # unique session per attack
         generator = run_dan_attack(
             model_id=request.model,
             template=request.prompt,
-            defense=request.defense
+            defense=request.defense,
+            session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
     
     if request.attack == "ascii-art-jailbreak":
+        session_id = uuid.uuid4().hex  # unique session per attack
         generator = run_ascii_art_jailbreak_attack(
             model_id=request.model,
             template=request.prompt,
-            defense=request.defense
+            defense=request.defense,
+            session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
 
     # FCB attack now runs in-process (reuses model cache)
     if request.attack == "fcb-bias_guided":
+        session_id = uuid.uuid4().hex  # unique session per attack
         generator = run_fcb_attack(
             model_id=request.model,
             template=request.prompt,
-            defense=request.defense
+            defense=request.defense,
+            session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
 
     if(request.attack == "none"):
         # No special attack selected → go through defenses + model directly
+        session_id = uuid.uuid4().hex  # unique session per request
         async def stream_with_gpu_info():
             # Send GPU info FIRST before any processing
             if torch.cuda.is_available():
@@ -223,7 +244,7 @@ async def prompt_stream(request: PromptRequest):
                     model_id=request.model,
                     device="cuda" if torch.cuda.is_available() else "cpu",
                     generation_options={},
-                    session_id=None,
+                    session_id=session_id,
                 )
                 print(f"Model processing complete, blocked: {blocked}")
                 
@@ -239,6 +260,12 @@ async def prompt_stream(request: PromptRequest):
                 traceback.print_exc()
                 yield f"Error: {str(e)}\n".encode("utf-8")
                 yield b"Model loading failed. Check backend logs.\n"
+            finally:
+                # Cleanup history
+                try:
+                    clear_history(session_id)
+                except Exception as e:
+                    print(f"Error clearing history for {session_id}: {e}")
         
         return StreamingResponse(stream_with_gpu_info(), media_type="text/plain; charset=utf-8")
 

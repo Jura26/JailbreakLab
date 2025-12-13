@@ -11,16 +11,6 @@ const models: ModelInfo[] = [
       description: "Classic OpenAI GPT-2, simple English generation.",
    },
    {
-      id: "gpt2-medium",
-      name: "GPT-2 Medium-355M",
-      description: "Needs ~1.5 GB GPU RAM.",
-   },
-   {
-      id: "gpt2-large",
-      name: "GPT-2 Large-774M",
-      description: "Needs ~3 to 4 GB VRAM.",
-   },
-   {
       id: "gpt2-xl",
       name: "GPT-2 XL-1.5B",
       description: "Needs ~6 to 8 GB VRAM.",
@@ -34,11 +24,6 @@ const models: ModelInfo[] = [
       id: "facebook/opt-6.7b",
       name: "OPT-6.7B",
       description: "Needs 20 GB VRAM.",
-   },
-   {
-      id: "facebook/opt-13b",
-      name: "OPT-13B",
-      description: "Needs 32 GB + VRAM or multi-GPU.",
    },
    {
       id: "mistralai/Mistral-7B-Instruct-v0.2",

@@ -113,12 +113,9 @@ async def apply_defense(
             except Exception:
                 pass
 
-        resp = await generate_streaming(model_id=model_id, prompt=augmented_prompt, device=device, generation_options=generation_options)
+        resp = await generate_streaming(model_id=model_id, prompt=augmented_prompt, device=device, generation_options=generation_options, session_id=session_id)
 
-        # capture assistant output into history when applicable
-        if session_id and store_history and isinstance(resp, StreamingResponse):
-            wrapped = StreamingResponse(_capture_and_forward(resp.body_iterator, session_id), media_type=getattr(resp, 'media_type', 'text/plain'))
-            return False, wrapped
+        # model.py handles logging the assistant response cleanly, so we just return the response
         return False, resp
 
     return False, None
