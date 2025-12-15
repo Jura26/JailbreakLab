@@ -1,18 +1,13 @@
-# Use official Node LTS image
-FROM node:20-alpine
-
+# Build stage
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Copy dependency files first (for caching)
 COPY package*.json ./
-
-RUN npm install
-
-# Copy the rest of the app
+RUN npm ci
 COPY . .
+RUN npm run build
 
-# Expose Vite dev server port
-EXPOSE 5173
-
-# Default command to start Vite
-CMD npm run dev -- --host
+# Runtime stage serves static assets via nginx
+FROM nginx:stable-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

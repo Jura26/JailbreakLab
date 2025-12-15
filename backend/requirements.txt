@@ -6,4 +6,5 @@ langchain-huggingface
 langchain-core
 nltk
 accelerate
+redis
 pyfiglet

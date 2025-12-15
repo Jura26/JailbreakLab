@@ -1,47 +1,20 @@
+"use client";
+
 import "./App.css";
-import React, { useState } from "react";
-import {
-   Shield,
-   Sword,
-   Brain,
-   Send,
-   Info,
-   CheckCircle,
-   XCircle,
-} from "lucide-react";
+import { useState } from "react";
+import { Zap } from "lucide-react";
+
+import type { Attack, Defense, Model, Prompt } from "./types";
 import attacks from "./components/attacks";
 import defenses from "./components/defenses";
 import models from "./components/models";
 
-interface Attack {
-   id: string;
-   name: string;
-   description: string;
-}
-
-interface Defense {
-   id: string;
-   name: string;
-   description: string;
-}
-
-interface Model {
-   id: string;
-   name: string;
-   description: string;
-}
-
-interface Prompt {
-   text: string;
-   timestamp: string;
-   attack: Attack;
-   defense: Defense;
-   model: Model;
-   scriptOutput: string;
-   progress?: number; // 0 to 100
-   gpuInfo?: string;
-   isBlocked?: boolean; // Flag for blocked input
-}
+import AttackSelector from "./components/AttackSelector";
+import DefenseSelector from "./components/DefenseSelector";
+import ModelSelector from "./components/ModelSelector";
+import ExecutionHistory from "./components/ExecutionHistory";
+import PromptInput from "./components/PromptInput";
+import InfoModal from "./components/InfoModal";
 
 function App() {
    const [selectedAttack, setSelectedAttack] = useState<Attack>(attacks[0]);
@@ -49,12 +22,39 @@ function App() {
    const [selectedModel, setSelectedModel] = useState<Model>(models[0]);
    const [message, setMessage] = useState("");
    const [prompts, setPrompts] = useState<Prompt[]>([]);
+   const [infoModalOpen, setInfoModalOpen] = useState(false);
+   const [infoTitle, setInfoTitle] = useState("");
+   const [infoBody, setInfoBody] = useState("");
+   const [infoRefs, setInfoRefs] = useState<string[]>([]);
+   const [abortController, setAbortController] =
+      useState<AbortController | null>(null);
+   const [isExecuting, setIsExecuting] = useState(false);
+
+   const handleCancel = () => {
+      if (abortController) {
+         abortController.abort();
+         setAbortController(null);
+         setIsExecuting(false);
+      }
+   };
+
+   const handleInfoClick = (title: string, body: string, refs: string[]) => {
+      setInfoTitle(title);
+      setInfoBody(body);
+      setInfoRefs(refs);
+      setInfoModalOpen(true);
+   };
 
    const handleSend = async () => {
       if (!message.trim()) return;
 
       const currentMessage = message;
       setMessage("");
+
+      // Create new abort controller for this request
+      const controller = new AbortController();
+      setAbortController(controller);
+      setIsExecuting(true);
 
       let newIndex: number;
       setPrompts((prev) => {
@@ -69,6 +69,8 @@ function App() {
                model: selectedModel,
                scriptOutput: "",
                progress: 0,
+               isBlocked: false,
+               attackSuccess: false,
                gpuInfo: "",
             },
          ];
@@ -87,6 +89,7 @@ function App() {
                   model: selectedModel.id,
                   isBlocked: false,
                }),
+               signal: controller.signal,
             }
          );
 
@@ -111,6 +114,7 @@ function App() {
 
          let gpuCapturedForThisPrompt = false;
          let blockedPrompt = false;
+         let iterationCount = 0;
 
          while (!done) {
             const result = await reader.read();
@@ -120,6 +124,9 @@ function App() {
                const lines = text.split("\n");
 
                for (const line of lines) {
+                  iterationCount++;
+                  console.debug(`Iteration ${iterationCount}: Processing line`);
+                  console.debug(`Line content:`, line);
                   const trimmed = line.trim();
                   if (!trimmed) continue;
 
@@ -136,7 +143,23 @@ function App() {
                      blockedPrompt = true;
                      continue;
                   }
-                  // FIRST LINE GPU INFO (per prompt)
+
+                  if (trimmed.startsWith("[ATTACK_SUCCESS]")) {
+                     const success =
+                        trimmed.replace("[ATTACK_SUCCESS]", "").trim() ===
+                        "true";
+                     setPrompts((prev) => {
+                        const copy = [...prev];
+                        if (!copy[newIndex]) return prev;
+                        copy[newIndex] = {
+                           ...copy[newIndex],
+                           attackSuccess: success,
+                        };
+                        return copy;
+                     });
+                     continue;
+                  }
+
                   if (
                      !gpuCapturedForThisPrompt &&
                      (trimmed.startsWith("No compatible GPU") ||
@@ -152,12 +175,11 @@ function App() {
                         return copy;
                      });
                      gpuCapturedForThisPrompt = true;
-                     continue; // don’t add to scriptOutput
+                     continue;
                   }
 
-                  // Progress update
                   if (trimmed.startsWith("[PROGRESS]")) {
-                     const percent = parseFloat(
+                     const percent = Number.parseFloat(
                         trimmed.replace("[PROGRESS]", "").trim()
                      );
                      if (!isNaN(percent)) {
@@ -172,7 +194,6 @@ function App() {
                         });
                      }
                   } else {
-                     // Normal output
                      localAccum += line + "\n";
                      setPrompts((prev) => {
                         const copy = [...prev];
@@ -188,7 +209,6 @@ function App() {
             }
          }
 
-         // finalize progress
          setPrompts((prev) => {
             const copy = [...prev];
             if (!copy[newIndex]) return prev;
@@ -196,284 +216,96 @@ function App() {
             return copy;
          });
       } catch (err) {
-         console.error("Streaming error:", err);
-         setPrompts((prev) => {
-            const copy = [...prev];
-            if (!copy[newIndex]) return prev;
-            copy[newIndex] = {
-               ...copy[newIndex],
-               scriptOutput: `Error: ${String(err)}`,
-               progress: 0,
-            };
-            return copy;
-         });
-      }
-   };
-
-   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-         e.preventDefault();
-         handleSend();
+         // Check if it was cancelled (AbortError is expected when user clicks cancel)
+         if (err instanceof Error && err.name === "AbortError") {
+            // Don't log AbortError - it's expected when canceling
+            setPrompts((prev) => {
+               const copy = [...prev];
+               if (!copy[newIndex]) return prev;
+               copy[newIndex] = {
+                  ...copy[newIndex],
+                  scriptOutput: `Manually canceled`,
+                  progress: 0,
+               };
+               return copy;
+            });
+         } else {
+            // Log unexpected errors
+            console.error("Streaming error:", err);
+            setPrompts((prev) => {
+               const copy = [...prev];
+               if (!copy[newIndex]) return prev;
+               copy[newIndex] = {
+                  ...copy[newIndex],
+                  scriptOutput: `Error: ${String(err)}`,
+                  progress: 0,
+               };
+               return copy;
+            });
+         }
+      } finally {
+         setIsExecuting(false);
+         setAbortController(null);
       }
    };
 
    return (
-      <div className="flex justify-center items-center min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5">
-         <div className="max-w-7xl mx-auto">
-            {/* Configuration Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-               {/* Attack */}
-               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-2 mb-2">
-                     <Sword className="text-red-400" size={24} />
-                     <h2 className="text-xl font-semibold text-white">
-                        Attack Type
-                     </h2>
-                  </div>
-
-                  <select
-                     value={selectedAttack.id}
-                     onChange={(e) =>
-                        setSelectedAttack(
-                           attacks.find((a) => a.id === e.target.value) ||
-                              attacks[0]
-                        )
-                     }
-                     className="w-full bg-white/5 border border-white/30 rounded-lg px-4 py-2 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-red-400"
-                  >
-                     {attacks.map((attack) => (
-                        <option
-                           key={attack.id}
-                           value={attack.id}
-                           className="bg-slate-800"
-                        >
-                           {attack.name}
-                        </option>
-                     ))}
-                  </select>
-
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                     <div className="flex items-start gap-2">
-                        <Info
-                           className="text-red-400 flex-shrink-0 mt-1"
-                           size={16}
-                        />
-                        <p className="text-sm text-red-100">
-                           {selectedAttack.description}
-                        </p>
-                     </div>
-                  </div>
+      <div className="min-h-screen w-full bg-gradient-to-br from-[#0a0a0f] via-[#0f0f1a] to-[#0a0a0f] p-3 md:p-4">
+         <div className="max-w-[1800px] mx-auto">
+            <header className="mb-4 text-center">
+               <div className="flex items-center justify-center gap-2 mb-2">
+                  <Zap className="text-[#6366f1] w-7 h-7" />
+                  <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#f8fafc] to-[#cbd5e1] bg-clip-text text-transparent">
+                     AI Security Tester
+                  </h1>
                </div>
+               <p className="text-[#94a3b8] text-sm max-w-2xl mx-auto leading-relaxed">
+                  Test AI model vulnerabilities with various attack and defense
+                  mechanisms
+               </p>
+            </header>
 
-               {/* Defense */}
-               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-2 mb-4">
-                     <Shield className="text-green-400" size={24} />
-                     <h2 className="text-xl font-semibold text-white">
-                        Defense Type
-                     </h2>
-                  </div>
-                  <select
-                     value={selectedDefense.id}
-                     onChange={(e) =>
-                        setSelectedDefense(
-                           defenses.find((d) => d.id === e.target.value) ||
-                              defenses[0]
-                        )
-                     }
-                     className="w-full bg-white/5 border border-white/30 rounded-lg px-4 py-2 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  >
-                     {defenses.map((defense) => (
-                        <option
-                           key={defense.id}
-                           value={defense.id}
-                           className="bg-slate-800"
-                        >
-                           {defense.name}
-                        </option>
-                     ))}
-                  </select>
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                     <div className="flex items-start gap-2">
-                        <Info
-                           className="text-green-400 flex-shrink-0 mt-1"
-                           size={16}
-                        />
-                        <p className="text-sm text-green-100">
-                           {selectedDefense.description}
-                        </p>
-                     </div>
-                  </div>
-               </div>
-
-               {/* Model */}
-               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-2 mb-4">
-                     <Brain className="text-blue-400" size={24} />
-                     <h2 className="text-xl font-semibold text-white">Model</h2>
-                  </div>
-                  <select
-                     value={selectedModel.id}
-                     onChange={(e) =>
-                        setSelectedModel(
-                           models.find((m) => m.id === e.target.value) ||
-                              models[0]
-                        )
-                     }
-                     className="w-full bg-white/5 border border-white/30 rounded-lg px-4 py-2 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  >
-                     {models.map((model) => (
-                        <option
-                           key={model.id}
-                           value={model.id}
-                           className="bg-slate-800"
-                        >
-                           {model.name}
-                        </option>
-                     ))}
-                  </select>
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                     <div className="flex items-start gap-2">
-                        <Info
-                           className="text-blue-400 flex-shrink-0 mt-1"
-                           size={16}
-                        />
-                        <p className="text-sm text-blue-100">
-                           {selectedModel.description}
-                        </p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* Prompt Display */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 mb-6 h-[300px] overflow-y-auto">
-               <h2 className="text-xl font-semibold text-white mb-4">
-                  Prompt History
-               </h2>
-               <div className="space-y-3 max-h-[200px] overflow-y-auto">
-                  {prompts.length === 0 ? (
-                     <div className="text-center text-white opacity-50 py-12">
-                        <p>
-                           No prompts sent yet. Type a message below to get
-                           started.
-                        </p>
-                     </div>
-                  ) : (
-                     prompts.map((prompt, idx) => (
-                        <div
-                           key={idx}
-                           className="bg-white/5 rounded-lg p-4 border border-white/10"
-                        >
-                           <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center gap-2">
-                                 {/* Status icon: check when finished successfully, X when blocked or error */}
-                                 {prompt.isBlocked ||
-                                 (prompt.scriptOutput || "").startsWith(
-                                    "Error:"
-                                 ) ? (
-                                    <XCircle
-                                       className="text-red-400"
-                                       size={16}
-                                       title={
-                                          prompt.isBlocked ? "Blocked" : "Error"
-                                       }
-                                    />
-                                 ) : prompt.progress === 100 ? (
-                                    <CheckCircle
-                                       className="text-green-400"
-                                       size={16}
-                                       title="Completed"
-                                    />
-                                 ) : null}
-
-                                 <span className="text-xs text-purple-300">
-                                    {prompt.timestamp}
-                                 </span>
-                              </div>
-
-                              <div className="flex gap-2 text-xs items-center">
-                                 {/* GPU info inline */}
-                                 {prompt.gpuInfo && (
-                                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded">
-                                       {prompt.gpuInfo}
-                                    </span>
-                                 )}
-                                 <span className="px-2 py-1 bg-red-500/20 text-red-300 rounded">
-                                    {prompt.attack.name}
-                                 </span>
-                                 <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded">
-                                    {prompt.defense.name}
-                                 </span>
-                                 <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded">
-                                    {prompt.model.name}
-                                 </span>
-                              </div>
-                           </div>
-
-                           <p className="text-white wrap-break-word">
-                              {prompt.text}
-                           </p>
-
-                           {/* Progress Bar */}
-                           {prompt.progress !== undefined && (
-                              <div className="w-full bg-white/20 rounded-full h-2 mt-2">
-                                 <div
-                                    className={`h-2 rounded-full transition-all duration-200 ${
-                                       prompt.isBlocked
-                                          ? "bg-red-500" // RED when blocked
-                                          : "bg-green-400" // GREEN when not blocked
-                                    }`}
-                                    style={{ width: `${prompt.progress}%` }}
-                                 />
-                              </div>
-                           )}
-
-                           {prompt.scriptOutput && (
-                              <pre
-                                 className={`text-sm mt-2 whitespace-pre-wrap ${
-                                    prompt.isBlocked ||
-                                    (prompt.scriptOutput || "").startsWith(
-                                       "Error:"
-                                    )
-                                       ? "text-red-300"
-                                       : "text-green-300"
-                                 }`}
-                              >
-                                 {prompt.scriptOutput}
-                              </pre>
-                           )}
-                        </div>
-                     ))
-                  )}
-               </div>
-            </div>
-
-            {/* Input */}
-            <div className="bg-white/10 h-1/6 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-               <h2 className="text-xl font-semibold text-white mb-4">
-                  Send Prompt
-               </h2>
-               <div className="flex gap-4">
-                  <textarea
-                     value={message}
-                     onChange={(e) => setMessage(e.target.value)}
-                     onKeyPress={handleKeyPress}
-                     placeholder="Type your prompt here..."
-                     className="flex-1 bg-white/5 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white-50 focus:outline-none focus:ring-2 focus:ring-red-800 resize-none"
-                     rows={1}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-3 lg:gap-4">
+               <div className="flex flex-col gap-3 h-[calc(100vh-150px)] overflow-y-auto">
+                  <AttackSelector
+                     selectedAttack={selectedAttack}
+                     setSelectedAttack={setSelectedAttack}
+                     onInfoClick={handleInfoClick}
                   />
-                  <button
-                     onClick={handleSend}
-                     disabled={!message.trim()}
-                     className="bg-gradient-to-r from-green-500/50 to-green-500/80 hover:from-green-900 hover:to-green-900 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 self-end"
-                  >
-                     <Send size={20} />
-                     Send
-                  </button>
+                  <DefenseSelector
+                     selectedDefense={selectedDefense}
+                     setSelectedDefense={setSelectedDefense}
+                     onInfoClick={handleInfoClick}
+                  />
+                  <ModelSelector
+                     selectedModel={selectedModel}
+                     setSelectedModel={setSelectedModel}
+                  />
+               </div>
+
+               <div className="flex flex-col gap-3 h-[calc(100vh-150px)]">
+                  <ExecutionHistory
+                     prompts={prompts}
+                     isExecuting={isExecuting}
+                     onCancel={handleCancel}
+                  />
+                  <PromptInput
+                     message={message}
+                     setMessage={setMessage}
+                     isExecuting={isExecuting}
+                     onSend={handleSend}
+                  />
                </div>
             </div>
          </div>
+
+         <InfoModal
+            isOpen={infoModalOpen}
+            onClose={() => setInfoModalOpen(false)}
+            title={infoTitle}
+            body={infoBody}
+            references={infoRefs}
+         />
       </div>
    );
 }
