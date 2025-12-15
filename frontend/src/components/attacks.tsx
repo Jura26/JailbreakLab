@@ -68,6 +68,12 @@ const attacks: Attack[] = [
          "https://github.com/uw-nsl/ArtPrompt",
       ],
    },
+   {
+      id: "ascii-art-jailbreak",
+      name: "ASCII Art Jailbreak",
+      description:
+         "Uses ASCII art or other visual techniques to bypass content filters and restrictions.",
+   },
 ];
 
 export default attacks;
