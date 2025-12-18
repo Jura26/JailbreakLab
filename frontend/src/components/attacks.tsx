@@ -69,10 +69,16 @@ const attacks: Attack[] = [
       ],
    },
    {
-      id: "ascii-art-jailbreak",
-      name: "ASCII Art Jailbreak",
+      id: "neurostrike",
+      name: "NeuroStrike",
       description:
-         "Uses ASCII art or other visual techniques to bypass content filters and restrictions.",
+         "Neuron-level attack exploiting safety neurons via profiling and pruning.",
+      longDescription:
+         "NeuroStrike is a sophisticated jailbreaking framework that targets the fundamental safety alignment of LLMs by identifying and manipulating 'safety neurons'—sparse neurons responsible for detecting harmful inputs. In the black-box variant, it uses profiling attacks where adversarial prompt generators are trained on surrogate models and transferred to proprietary targets.\n\nThe attack leverages the transferability of safety mechanisms across model architectures, allowing prompts optimized on open-weight models to bypass defenses in black-box systems. This highlights vulnerabilities in alignment techniques that rely on localized neuron activations, demonstrating that safety can be compromised by minimal perturbations.\n\nNeuroStrike achieves high attack success rates (up to 76.9% on open models, 63.7% on black-box APIs) with low computational overhead, making it a significant threat to deployed LLM systems. It underscores the need for more robust, distributed safety representations rather than relying on pruneable neuron subsets.",
+      references: [
+         "https://arxiv.org/abs/2509.11864",
+         "https://github.com/wu-lichao/NeuroStrike-Neuron-Level-Attacks-on-Aligned-LLMs",
+      ],
    },
 ];
 

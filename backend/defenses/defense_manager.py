@@ -67,6 +67,7 @@ async def apply_defense(
     generation_options: Optional[Dict] = None,
     session_id: Optional[str] = None,
     store_history: bool = True,
+    skip_progress: bool = False,
 ) -> tuple[bool, Optional[StreamingResponse]]:
     """
     Runs the selected defense. If the defense blocks the prompt, returns a StreamingResponse
@@ -113,7 +114,7 @@ async def apply_defense(
             except Exception:
                 pass
 
-        resp = await generate_streaming(model_id=model_id, prompt=augmented_prompt, device=device, generation_options=generation_options, session_id=session_id)
+        resp = await generate_streaming(model_id=model_id, prompt=augmented_prompt, device=device, generation_options=generation_options, session_id=session_id, skip_progress=skip_progress)
 
         # model.py handles logging the assistant response cleanly, so we just return the response
         return False, resp

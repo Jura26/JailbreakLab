@@ -134,7 +134,7 @@ def get_model_and_tokenizer(model_id: str, device: str = "cpu"):
         raise
 
 
-async def _generate_and_stream(tokenizer, model, prompt: str, generation_options: Dict, session_id: Optional[str] = None) -> StreamingResponse:
+async def _generate_and_stream(tokenizer, model, prompt: str, generation_options: Dict, session_id: Optional[str] = None, skip_progress: bool = False) -> StreamingResponse:
     """Run generation synchronously but expose results as an async stream (yields one chunk).
     This keeps the StreamingResponse interface while keeping implementation simple.
     
@@ -150,7 +150,8 @@ async def _generate_and_stream(tokenizer, model, prompt: str, generation_options
         # Run generation in a thread to avoid blocking async loop
         loop = asyncio.get_running_loop()
 
-        yield b"[PROGRESS] 10\n"
+        if not skip_progress:
+            yield b"[PROGRESS] 10\n"
 
         def _run():
             # Determine positional embeddings and safe max_new_tokens
@@ -196,9 +197,11 @@ async def _generate_and_stream(tokenizer, model, prompt: str, generation_options
                 text = text[len(prompt):].lstrip()
             return text
 
-        yield b"[PROGRESS] 40\n"
+        if not skip_progress:
+            yield b"[PROGRESS] 40\n"
         text = await loop.run_in_executor(None, _run)
-        yield b"[PROGRESS] 95\n"
+        if not skip_progress:
+            yield b"[PROGRESS] 95\n"
         
         # Log assistant response to history
         if session_id:
@@ -219,7 +222,7 @@ async def _generate_and_stream(tokenizer, model, prompt: str, generation_options
     return StreamingResponse(_aiter(), media_type="text/plain")
 
 
-async def generate_streaming(model_id: str, prompt: str, device: str = "cpu", generation_options: Optional[Dict] = None, session_id: Optional[str] = None) -> StreamingResponse:
+async def generate_streaming(model_id: str, prompt: str, device: str = "cpu", generation_options: Optional[Dict] = None, session_id: Optional[str] = None, skip_progress: bool = False) -> StreamingResponse:
     """Public helper to generate text for `prompt` using `model_id` and return a StreamingResponse.
     
     Args:
@@ -237,7 +240,8 @@ async def generate_streaming(model_id: str, prompt: str, device: str = "cpu", ge
 
     async def _stream_with_loading():
         # Yield early progress markers while loading model
-        yield b"[PROGRESS] 0\n"
+        if not skip_progress:
+            yield b"[PROGRESS] 0\n"
         
         # Load model in thread to avoid blocking
         loop = asyncio.get_running_loop()
@@ -245,12 +249,14 @@ async def generate_streaming(model_id: str, prompt: str, device: str = "cpu", ge
         def _load_model():
             return get_model_and_tokenizer(model_id, device)
         
-        yield b"[PROGRESS] 5\n"
+        if not skip_progress:
+            yield b"[PROGRESS] 5\n"
         tokenizer, model = await loop.run_in_executor(None, _load_model)
-        yield b"[PROGRESS] 8\n"
+        if not skip_progress:
+            yield b"[PROGRESS] 8\n"
         
         # Now stream generation results
-        resp = await _generate_and_stream(tokenizer, model, prompt, generation_options, session_id)
+        resp = await _generate_and_stream(tokenizer, model, prompt, generation_options, session_id, skip_progress)
         async for chunk in resp.body_iterator:
             yield chunk
     
