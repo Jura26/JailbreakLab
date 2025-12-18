@@ -24,6 +24,7 @@ from attacks.promptInjection import (
 )
 from attacks.FCB import run_fcb_attack
 from attacks.neuroStrike import run_neurostrike_attack
+from attacks.GCG import run_gcg_attack
 
 app = FastAPI()
 
@@ -228,6 +229,17 @@ async def prompt_stream(request: PromptRequest):
     if request.attack == "fcb-bias_guided":
         session_id = uuid.uuid4().hex  # unique session per attack
         generator = run_fcb_attack(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense,
+            session_id=session_id
+        )
+        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
+    
+    # GCG attack - gradient-based adversarial suffix optimization
+    if request.attack == "gcg-gradient":
+        session_id = uuid.uuid4().hex  # unique session per attack
+        generator = run_gcg_attack(
             model_id=request.model,
             template=request.prompt,
             defense=request.defense,

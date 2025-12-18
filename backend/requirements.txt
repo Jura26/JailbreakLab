@@ -1,10 +1,14 @@
 fastapi
 uvicorn[standard]
 pydantic
+torch
+numpy
 transformers
 langchain-huggingface
 langchain-core
 nltk
 accelerate
+bitsandbytes
 redis
 pyfiglet
+tqdm
