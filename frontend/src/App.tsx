@@ -77,9 +77,8 @@ function App() {
       });
 
       try {
-         const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
          const response = await fetch(
-            `${apiUrl}/api/prompt/stream`,
+            "http://localhost:8000/api/prompt/stream",
             {
                method: "POST",
                headers: { "Content-Type": "application/json" },
