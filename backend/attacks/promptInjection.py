@@ -16,7 +16,7 @@ from .rolePlaying import run_role_playing_attack
 from .chainOfQuestions import run_chain_of_questions_attack
 from .danAttack import run_dan_attack
 from .asciiArtJailbreak import run_ascii_art_jailbreak_attack
-from .neuroStrike import run_neurostrike_attack
+from .neuroStrike.neuroStrike import run_neurostrike_attack
 
 # silencing / controlling verbosity BEFORE importing transformers/accelerate/others
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"

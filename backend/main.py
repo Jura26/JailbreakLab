@@ -23,7 +23,7 @@ from attacks.promptInjection import (
     run_ascii_art_jailbreak_attack,
 )
 from attacks.FCB import run_fcb_attack
-from attacks.neuroStrike import run_neurostrike_attack
+from attacks.neuroStrike.neuroStrike import run_neurostrike_attack
 from attacks.GCG import run_gcg_attack
 
 app = FastAPI()
