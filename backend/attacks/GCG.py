@@ -57,7 +57,7 @@ class GCGAttack:
         self,
         user_prompt: str,
         target_output: str,
-        adv_string_init: str = "! ! ! ! ! ! ! ! ! !",
+        adv_string_init: str = "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !",
     ) -> AsyncGenerator[bytes, None]:
         """
         Run GCG attack with streaming progress updates.
@@ -136,40 +136,53 @@ class GCGAttack:
             # Forward pass
             logits = self.model(inputs_embeds=full_embeds).logits[0]
             
-            # Compute loss on target tokens
+            # Compute loss using proper slice alignment (as in paper)
+            # Loss slice should be target_slice.start-1 to target_slice.stop-1
             target_start = adv_end
-            target_logits = logits[target_start-1:target_start-1+len(target_toks)]
-            target_ids = input_ids[target_start:target_start+len(target_toks)]
-            loss = nn.CrossEntropyLoss()(target_logits, target_ids)
+            loss_slice = slice(target_start-1, target_start-1+len(target_toks))
+            target_slice = slice(target_start, target_start+len(target_toks))
+            loss = nn.CrossEntropyLoss()(logits[loss_slice, :], input_ids[target_slice])
             
             # Backward pass
             loss.backward()
             
-            # Get gradients
-            grad = one_hot.grad
+            # Get gradients and normalize (critical for GCG paper)
+            grad = one_hot.grad.clone()
+            grad = grad / grad.norm(dim=-1, keepdim=True)
             
             # Apply token filter to gradients
             with torch.no_grad():
                 grad[:, ~filter_mask] = float('inf')
             
-            # Sample candidates
+            # Sample candidates using coordinate-wise greedy sampling (as in paper)
             with torch.no_grad():
                 # Get top-k tokens for each position
                 top_indices = (-grad).topk(self.topk, dim=1).indices
                 
-                # Generate diverse candidates
-                candidates = []
-                for pos in range(len(best_adv_toks)):
-                    num_samples = min(self.batch_size // len(best_adv_toks) + 1, self.topk)
-                    for _ in range(num_samples):
-                        new_toks = best_adv_toks.copy()
-                        new_tok_idx = np.random.randint(0, min(self.topk, top_indices.shape[1]))
-                        new_toks[pos] = top_indices[pos, new_tok_idx].item()
-                        candidates.append(new_toks)
-                        if len(candidates) >= self.batch_size:
-                            break
-                    if len(candidates) >= self.batch_size:
-                        break
+                # Generate candidates using proper coordinate-wise sampling from paper
+                # This is critical: sample positions uniformly and substitute with top-k tokens
+                control_toks_tensor = torch.tensor(best_adv_toks, device=self.device)
+                original_control_toks = control_toks_tensor.repeat(self.batch_size, 1)
+                
+                # Sample positions uniformly across the suffix (coordinate-wise)
+                new_token_pos = torch.arange(
+                    0, 
+                    len(best_adv_toks), 
+                    len(best_adv_toks) / self.batch_size,
+                    device=self.device
+                ).type(torch.int64)
+                
+                # Sample token values from top-k for each position
+                new_token_val = torch.gather(
+                    top_indices[new_token_pos], 1, 
+                    torch.randint(0, self.topk, (self.batch_size, 1), device=self.device)
+                )
+                
+                # Create new candidates by scattering new token values
+                new_control_toks = original_control_toks.scatter_(1, new_token_pos.unsqueeze(-1), new_token_val)
+                
+                # Convert to list of token lists
+                candidates = [new_control_toks[i].cpu().tolist() for i in range(self.batch_size)]
                 
                 # Batch evaluate candidates
                 eval_batch_size = 32
