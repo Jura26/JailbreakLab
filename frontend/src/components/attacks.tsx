@@ -80,6 +80,18 @@ const attacks: Attack[] = [
          "https://github.com/wu-lichao/NeuroStrike-Neuron-Level-Attacks-on-Aligned-LLMs",
       ],
    },
+   {
+      id: "gcg-gradient",
+      name: "GCG (Gradient-Based)",
+      description:
+         "Automatically optimizes adversarial suffixes using gradient-based search to jailbreak aligned models.",
+      longDescription:
+         "The GCG (Greedy Coordinate Gradient) attack represents a breakthrough in automated adversarial machine learning for language models. Unlike manual jailbreak techniques that rely on human creativity, GCG uses gradient-based optimization to automatically discover adversarial suffixes that maximize the probability of the model producing harmful or restricted outputs.\n\nThe attack works by computing gradients of the model's loss with respect to discrete tokens using a one-hot encoding trick. It then greedily selects token substitutions that minimize the loss on a target harmful completion (e.g., 'Sure, here is how to make a bomb...'). Through iterative optimization (typically 200-500 steps), GCG discovers seemingly random token sequences that reliably jailbreak the model.\n\nWhat makes GCG particularly concerning is its transferability: adversarial suffixes optimized against one model often work against other models, including those from different model families. This suggests that aligned LLMs share common vulnerabilities in their safety training. The suffixes often appear as gibberish to humans but exploit subtle patterns in the model's embedding space.\n\nGCG attacks are resource-intensive, requiring access to model gradients and significant compute time (1-2 hours for 7B models), making them more suitable for targeted attacks rather than casual misuse. However, once discovered, adversarial suffixes can be reused and shared, making this a scalable threat. Defending against GCG requires robust adversarial training, gradient masking, or runtime detection of unusual token patterns.",
+      references: [
+         "https://arxiv.org/abs/2307.15043",
+         "https://github.com/llm-attacks/llm-attacks",
+      ],
+   },
 ];
 
 export default attacks;

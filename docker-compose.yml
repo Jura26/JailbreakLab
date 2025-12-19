@@ -25,6 +25,8 @@ services:
       volumes:
          - ./frontend:/app
          - /app/node_modules
+      environment:
+         - VITE_API_URL=http://backend:8000
       command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
       depends_on:
          - backend
@@ -36,7 +38,7 @@ services:
       volumes:
          - redis-data:/data
       healthcheck:
-         test: ["CMD", "redis-cli", "ping"]
+         test: [ "CMD", "redis-cli", "ping" ]
          interval: 10s
          timeout: 5s
          retries: 3
