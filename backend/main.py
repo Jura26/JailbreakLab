@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from defenses.defense_manager import *
 from history_cache import clear_history
+from database import log_bert_statistic
 
 # Import attack functions for in-process execution (no subprocess)
 from attacks.promptInjection import (
@@ -154,17 +155,32 @@ async def prompt_stream(request: PromptRequest):
     print(f"POST received - Model: {request.model}, Attack: {request.attack}, Defense: {request.defense}")
     
     # Send GPU info as first yield for all attacks
-    async def gpu_info_and_stream(generator, session_id_to_clear: str = None):
+    async def gpu_info_and_stream(generator, session_id_to_clear: str = None, model_type: str = "", attack_type: str = "", defense_type: str = ""):
         # Send GPU info IMMEDIATELY before waiting for generator
         if torch.cuda.is_available():
             gpu_name = torch.cuda.get_device_name(0)
             yield f"GPU name: {gpu_name}\n".encode("utf-8")
         else:
             yield b"No compatible GPU detected\n"
-        
+
         # Now stream the rest from the generator
         try:
             async for chunk in generator:
+                # Check for attack success marker and log to database
+                try:
+                    decoded = chunk.decode("utf-8") if isinstance(chunk, bytes) else str(chunk)
+                    if "[ATTACK_SUCCESS]" in decoded:
+                        success = "true" in decoded.lower()
+                        log_bert_statistic(
+                            session_id=session_id_to_clear or "",
+                            model_type=model_type,
+                            attack_type=attack_type,
+                            defense_type=defense_type,
+                            attack_success=success,
+                            was_blocked=False
+                        )
+                except Exception as e:
+                    print(f"Error logging to database: {e}")
                 yield chunk
         finally:
             # Cleanup history after stream finishes
@@ -183,7 +199,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
     
     if request.attack == "chain-of-questions":
         session_id = uuid.uuid4().hex  # unique session per attack
@@ -193,7 +209,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
     
     if request.attack == "DAN":
         session_id = uuid.uuid4().hex  # unique session per attack
@@ -203,7 +219,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
     
     if request.attack == "ascii-art-jailbreak":
         session_id = uuid.uuid4().hex  # unique session per attack
@@ -213,7 +229,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
 
     if request.attack == "neurostrike":
         session_id = uuid.uuid4().hex  # unique session per attack
@@ -223,7 +239,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
 
     # FCB attack now runs in-process (reuses model cache)
     if request.attack == "fcb-bias_guided":
@@ -234,7 +250,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
     
     # GCG attack - gradient-based adversarial suffix optimization
     if request.attack == "gcg-gradient":
@@ -245,7 +261,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
 
     if(request.attack == "none"):
         # No special attack selected → go through defenses + model directly
@@ -274,6 +290,21 @@ async def prompt_stream(request: PromptRequest):
                 # Stream the response
                 if resp and isinstance(resp, StreamingResponse):
                     async for chunk in resp.body_iterator:
+                        # Check for attack success marker and log to database
+                        try:
+                            decoded = chunk.decode("utf-8") if isinstance(chunk, bytes) else str(chunk)
+                            if "[ATTACK_SUCCESS]" in decoded:
+                                success = "true" in decoded.lower()
+                                log_bert_statistic(
+                                    session_id=session_id,
+                                    model_type=request.model,
+                                    attack_type=request.attack,
+                                    defense_type=request.defense,
+                                    attack_success=success,
+                                    was_blocked=blocked
+                                )
+                        except Exception as e:
+                            print(f"Error logging to database: {e}")
                         yield chunk
                 elif resp:
                     yield str(resp).encode("utf-8")

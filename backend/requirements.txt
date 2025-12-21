@@ -12,3 +12,5 @@ bitsandbytes
 redis
 pyfiglet
 tqdm
+supabase
+python-dotenv
