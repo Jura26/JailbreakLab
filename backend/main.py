@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from defenses.defense_manager import *
 from history_cache import clear_history
-from database import log_bert_statistic
+from database import log_bert_statistic, get_bert_statistics, get_unique_values
 
 # Import attack functions for in-process execution (no subprocess)
 from attacks.promptInjection import (
@@ -327,3 +327,17 @@ async def prompt_stream(request: PromptRequest):
     async def just_return() -> AsyncGenerator[bytes, None]:
         yield b"No script run.\n"
     return StreamingResponse(just_return(), media_type="text/plain; charset=utf-8")
+
+
+# Statistics API endpoints
+@app.get("/api/statistics")
+async def get_statistics(attack_type: str = "all", defense_type: str = "all"):
+    """Fetch statistics with optional filters."""
+    data = get_bert_statistics(attack_type=attack_type, defense_type=defense_type)
+    return {"data": data}
+
+
+@app.get("/api/statistics/filters")
+async def get_filter_options():
+    """Get unique values for filter dropdowns."""
+    return get_unique_values()

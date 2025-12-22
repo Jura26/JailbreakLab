@@ -90,3 +90,56 @@ def log_manual_statistic(
     except Exception as e:
         print(f"Error logging to manual_statistics: {e}")
         return False
+
+
+def get_bert_statistics(
+    attack_type: Optional[str] = None,
+    defense_type: Optional[str] = None
+) -> list:
+    """
+    Fetch bert_statistics from database with optional filters.
+    Returns list of records.
+    """
+    client = get_supabase_client()
+    if not client:
+        return []
+
+    try:
+        query = client.table("bert_statistics").select("*")
+
+        if attack_type and attack_type != "all":
+            query = query.eq("attack_type", attack_type)
+        if defense_type and defense_type != "all":
+            query = query.eq("defense_type", defense_type)
+
+        result = query.execute()
+        return result.data if result.data else []
+    except Exception as e:
+        print(f"Error fetching bert_statistics: {e}")
+        return []
+
+
+def get_unique_values() -> dict:
+    """
+    Get unique attack types, defense types, and model types from database.
+    """
+    client = get_supabase_client()
+    if not client:
+        return {"attack_types": [], "defense_types": [], "model_types": []}
+
+    try:
+        result = client.table("bert_statistics").select("attack_type, defense_type, model_type").execute()
+        data = result.data if result.data else []
+
+        attack_types = list(set(r["attack_type"] for r in data if r.get("attack_type")))
+        defense_types = list(set(r["defense_type"] for r in data if r.get("defense_type")))
+        model_types = list(set(r["model_type"] for r in data if r.get("model_type")))
+
+        return {
+            "attack_types": sorted(attack_types),
+            "defense_types": sorted(defense_types),
+            "model_types": sorted(model_types)
+        }
+    except Exception as e:
+        print(f"Error fetching unique values: {e}")
+        return {"attack_types": [], "defense_types": [], "model_types": []}
