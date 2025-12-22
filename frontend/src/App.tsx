@@ -30,7 +30,9 @@ function App() {
    const [abortController, setAbortController] =
       useState<AbortController | null>(null);
    const [isExecuting, setIsExecuting] = useState(false);
-   const [activeView, setActiveView] = useState<"tester" | "statistics">("tester");
+   const [activeView, setActiveView] = useState<"tester" | "statistics">(
+      "tester"
+   );
 
    const handleCancel = () => {
       if (abortController) {
@@ -80,7 +82,7 @@ function App() {
 
       try {
          const response = await fetch(
-            "http://localhost:8000/api/prompt/stream",
+            `${import.meta.env.VITE_API_BASE_URL}/api/prompt/stream`,
             {
                method: "POST",
                headers: { "Content-Type": "application/json" },

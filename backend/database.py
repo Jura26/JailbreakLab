@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 from typing import Optional
 
-# Load .env file from project root
-env_path = Path(__file__).parent.parent / ".env"
+# Load public_env file from backend directory
+env_path = Path(__file__).parent / "public_env"
 load_dotenv(env_path)
 
 # Initialize Supabase client
@@ -20,10 +20,10 @@ def get_supabase_client() -> Optional[Client]:
         return _supabase_client
 
     url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
+    key = os.environ.get("SUPABASE_ANON_KEY")
 
     if not url or not key:
-        print("Warning: SUPABASE_URL or SUPABASE_KEY not set. Database logging disabled.")
+        print("Warning: SUPABASE_URL or SUPABASE_ANON_KEY not set. Database logging disabled.")
         return None
 
     try:
