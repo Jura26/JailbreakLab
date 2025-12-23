@@ -4,6 +4,7 @@ from fastapi.responses import StreamingResponse
 from . import input_sanitization  # import your defense module
 from . import system_prompt_hardening
 from .MaskedDefender import masked_defender
+from .PIGuard import piguard
 
 # Local import of model runner (relative to package)
 try:
@@ -31,6 +32,7 @@ DEFENSES = {
     "input_sanitization": input_sanitization.run,
     "masked_defender": masked_defender.run,
     "system_prompt_hardening": system_prompt_hardening.run,
+    "piguard": piguard.run,
 }
 
 
