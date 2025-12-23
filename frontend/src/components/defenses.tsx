@@ -48,6 +48,18 @@ const defenses: Defense[] = [
          "MaskedDefender is a specialized, learned defense mechanism designed to counter sophisticated jailbreak attacks. It operates by identifying and 'masking' (hiding or redacting) the specific parts of a prompt that contribute to its malicious nature, while preserving the benign context.\n\nIt typically uses a trained BERT-based or similar encoder model to score the 'harmfulness' of each token in the input. High-risk tokens are replaced with a mask token (e.g., `[MASK]`), rendering the adversarial instruction unintelligible to the target LLM. This approach is more robust than simple keyword filtering because it learns the *context* of harmfulness rather than just a list of bad words.\n\nIn practice, MaskedDefender can be tuned to operate at different sensitivity thresholds, trading off false positives (over-masking harmless content) against false negatives (failing to mask subtle attacks). When combined with other defenses such as rate limiting and output filtering, it contributes to a layered security architecture that targets both simple and highly optimized jailbreak attempts.",
       references: ["https://arxiv.org/abs/2402.08707"],
    },
+   {
+      id: "piguard",
+      name: "PIGuard",
+      description:
+         "A transformer-based classifier that detects prompt injection attacks using a fine-tuned model.",
+      longDescription:
+         "PIGuard is a prompt injection detection defense that leverages a fine-tuned transformer model released on Hugging Face (leolee99/PIGuard). It is specifically trained to distinguish between legitimate user prompts and malicious prompt injection attempts.\n\nThe model performs binary classification on input text, identifying whether the prompt contains injection patterns that could manipulate the LLM's behavior. Unlike rule-based approaches, PIGuard learns semantic patterns from training data, making it more robust against novel attack variations and obfuscation techniques.\n\nKey features:\n• **Pre-trained detection:** Uses a model fine-tuned specifically for prompt injection detection.\n• **Confidence scoring:** Provides confidence scores for classification decisions.\n• **Low latency:** Designed for real-time inference with minimal overhead.\n\nPIGuard is particularly effective against indirect prompt injections and sophisticated attacks that may evade keyword-based filters. It works best as part of a defense-in-depth strategy, complementing other defenses like input sanitization and system prompt hardening.",
+      references: [
+         "https://huggingface.co/leolee99/PIGuard",
+         "https://arxiv.org/abs/2312.12481",
+      ],
+   },
 ];
 
 export default defenses;
