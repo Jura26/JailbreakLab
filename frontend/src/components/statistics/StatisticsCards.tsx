@@ -5,6 +5,7 @@ import {
    Shield,
    Clock,
    CheckCircle,
+   AlertTriangle,
 } from "lucide-react";
 
 interface StatisticsCardsProps {
@@ -18,6 +19,7 @@ interface StatisticsCardsProps {
    refusalData: any;
    additionalData: any;
    toolLeakageData: any;
+   toolMisuseCount: number;
 }
 
 export default function StatisticsCards({
@@ -31,10 +33,11 @@ export default function StatisticsCards({
    refusalData,
    additionalData,
    toolLeakageData,
+   toolMisuseCount,
 }: StatisticsCardsProps) {
    return (
       <>
-         {/* Stats Cards */}
+         {/* Attack Metrics Cards */}
          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#6366f1]/30 transition-all duration-200">
                <div className="flex items-center gap-2 mb-2">
@@ -64,6 +67,20 @@ export default function StatisticsCards({
                </div>
             </div>
 
+            <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#f59e0b]/30 transition-all duration-200">
+               <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-[#f59e0b]/10 p-1.5 rounded-lg border border-[#f59e0b]/20">
+                     <Target className="text-[#f59e0b] w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider">
+                     Overall ASR
+                  </span>
+               </div>
+               <div className="text-2xl font-bold text-[#f59e0b]">
+                  {asrData.overall_asr?.toFixed(1) || 0}%
+               </div>
+            </div>
+
             <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#a855f7]/30 transition-all duration-200">
                <div className="flex items-center gap-2 mb-2">
                   <div className="bg-[#a855f7]/10 p-1.5 rounded-lg border border-[#a855f7]/20">
@@ -77,7 +94,10 @@ export default function StatisticsCards({
                   {bestAttack ? bestAttack.name : "N/A"}
                </div>
             </div>
+         </div>
 
+         {/* Defense Metrics Cards */}
+         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#10b981]/30 transition-all duration-200">
                <div className="flex items-center gap-2 mb-2">
                   <div className="bg-[#10b981]/10 p-1.5 rounded-lg border border-[#10b981]/20">
@@ -89,23 +109,6 @@ export default function StatisticsCards({
                </div>
                <div className="text-sm font-bold text-[#f8fafc] truncate">
                   {bestDefense ? bestDefense.name : "N/A"}
-               </div>
-            </div>
-         </div>
-
-         {/* Advanced Metrics Cards */}
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#f59e0b]/30 transition-all duration-200">
-               <div className="flex items-center gap-2 mb-2">
-                  <div className="bg-[#f59e0b]/10 p-1.5 rounded-lg border border-[#f59e0b]/20">
-                     <Target className="text-[#f59e0b] w-4 h-4" />
-                  </div>
-                  <span className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider">
-                     Overall ASR
-                  </span>
-               </div>
-               <div className="text-2xl font-bold text-[#f59e0b]">
-                  {asrData.overall_asr?.toFixed(1) || 0}%
                </div>
             </div>
 
@@ -123,20 +126,6 @@ export default function StatisticsCards({
                </div>
             </div>
 
-            <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#8b5cf6]/30 transition-all duration-200">
-               <div className="flex items-center gap-2 mb-2">
-                  <div className="bg-[#8b5cf6]/10 p-1.5 rounded-lg border border-[#8b5cf6]/20">
-                     <Clock className="text-[#8b5cf6] w-4 h-4" />
-                  </div>
-                  <span className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider">
-                     Median Time
-                  </span>
-               </div>
-               <div className="text-lg font-bold text-[#8b5cf6]">
-                  {queryBudgetData.median_time?.toFixed(1) || 0}s
-               </div>
-            </div>
-
             <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#10b981]/30 transition-all duration-200">
                <div className="flex items-center gap-2 mb-2">
                   <div className="bg-[#10b981]/10 p-1.5 rounded-lg border border-[#10b981]/20">
@@ -150,10 +139,7 @@ export default function StatisticsCards({
                   {refusalData.refusal_rate?.toFixed(1) || 0}%
                </div>
             </div>
-         </div>
 
-         {/* Additional Metrics Cards */}
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#f59e0b]/30 transition-all duration-200">
                <div className="flex items-center gap-2 mb-2">
                   <div className="bg-[#f59e0b]/10 p-1.5 rounded-lg border border-[#f59e0b]/20">
@@ -165,6 +151,23 @@ export default function StatisticsCards({
                </div>
                <div className="text-2xl font-bold text-[#f59e0b]">
                   {additionalData.block_rate?.toFixed(1) || 0}%
+               </div>
+            </div>
+         </div>
+
+         {/* Other Metrics Cards */}
+         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#8b5cf6]/30 transition-all duration-200">
+               <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-[#8b5cf6]/10 p-1.5 rounded-lg border border-[#8b5cf6]/20">
+                     <Clock className="text-[#8b5cf6] w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider">
+                     Median Time
+                  </span>
+               </div>
+               <div className="text-lg font-bold text-[#8b5cf6]">
+                  {queryBudgetData.median_time?.toFixed(1) || 0}s
                </div>
             </div>
 
@@ -199,14 +202,14 @@ export default function StatisticsCards({
             <div className="bg-[#1a1a24]/80 backdrop-blur-xl rounded-xl p-4 border border-[#2d2d3d] shadow-2xl hover:border-[#ef4444]/30 transition-all duration-200">
                <div className="flex items-center gap-2 mb-2">
                   <div className="bg-[#ef4444]/10 p-1.5 rounded-lg border border-[#ef4444]/20">
-                     <BarChart3 className="text-[#ef4444] w-4 h-4" />
+                     <AlertTriangle className="text-[#ef4444] w-4 h-4" />
                   </div>
                   <span className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider">
-                     Median Toxicity
+                     Tool Misuse Count
                   </span>
                </div>
                <div className="text-2xl font-bold text-[#ef4444]">
-                  {additionalData.median_toxicity?.toFixed(2) || 0.0}
+                  {toolMisuseCount.toLocaleString()}
                </div>
             </div>
          </div>

@@ -27,12 +27,12 @@ def increment_generate_streaming_call_count(session_id: str):
     _generate_streaming_call_counts[session_id] += 1
     print(f"DEBUG: Incremented count for session {session_id} to {_generate_streaming_call_counts[session_id]}")
 
-# Local import of model runner (relative to package)
-try:
-    from model import generate_streaming
-except Exception:
-    # fallback if package import context differs
-    from ..model import generate_streaming
+# Local import of model runner
+import sys
+import os
+# Add the parent directory to the path so we can import from the backend root
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from model import generate_streaming
 
 # history cache (Redis-backed)
 try:

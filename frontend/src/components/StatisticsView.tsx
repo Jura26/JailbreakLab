@@ -17,6 +17,7 @@ interface StatRecord {
    defense_type: string;
    attack_success: boolean;
    was_blocked: boolean;
+   tool_misuse: boolean;
 }
 
 interface FilterOptions {
@@ -46,6 +47,7 @@ export default function StatisticsView() {
    const [refusalData, setRefusalData] = useState<any>({});
    const [toolLeakageData, setToolLeakageData] = useState<any>({});
    const [additionalData, setAdditionalData] = useState<any>({});
+   const [toolMisuseCount, setToolMisuseCount] = useState<number>(0);
 
    useEffect(() => {
       fetch(`${API_URL}/api/statistics/filters`)
@@ -110,7 +112,14 @@ export default function StatisticsView() {
                   toolLeakageResult,
                   additionalResult,
                ]) => {
-                  setData(statsResult.data || []);
+                  const fullData = statsResult.data || [];
+                  const filteredData = fullData.filter(
+                     (d: StatRecord) => !d.tool_misuse
+                  );
+                  setData(filteredData);
+                  setToolMisuseCount(
+                     fullData.filter((d: StatRecord) => d.tool_misuse).length
+                  );
                   setAsrData(asrResult);
                   setDefenseBypassData(defenseBypassResult);
                   setQueryBudgetData(queryBudgetResult);
@@ -255,6 +264,7 @@ export default function StatisticsView() {
                   refusalData={refusalData}
                   additionalData={additionalData}
                   toolLeakageData={toolLeakageData}
+                  toolMisuseCount={toolMisuseCount}
                />
 
                <StatisticsCharts
