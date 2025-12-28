@@ -287,7 +287,7 @@ function App() {
                   <div className="flex items-center justify-center gap-2 mb-2">
                      <Zap className="text-[#6366f1] w-7 h-7" />
                      <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#f8fafc] to-[#cbd5e1] bg-clip-text text-transparent">
-                        AI Security Tester
+                        JailbreakLab
                      </h1>
                   </div>
                   <p className="text-[#94a3b8] text-sm max-w-2xl mx-auto leading-relaxed">

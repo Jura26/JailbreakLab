@@ -12,9 +12,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from defenses.defense_manager import *
+from defenses.defense_manager import apply_defense, get_generate_streaming_call_count
 from history_cache import clear_history
-from database import log_bert_statistic, get_bert_statistics, get_unique_values
+from database import (
+    log_bert_statistic, 
+    get_bert_statistics, 
+    get_unique_values,
+    calculate_attack_success_rate,
+    calculate_defense_bypass_rate,
+    calculate_query_budget_metrics,
+    calculate_refusal_metrics,
+    calculate_tool_and_leakage_metrics,
+    detect_data_leakage,
+    calculate_additional_metrics
+)
+
+from model import detect_attack_success, detect_prompt_attack, detect_tool_misuse_from_prompt_and_response, detect_prompt_attack, detect_tool_misuse_from_prompt_and_response
 
 # Import attack functions for in-process execution (no subprocess)
 from attacks.promptInjection import (
@@ -63,7 +76,6 @@ async def options_prompt_stream():
 @app.post("/api/test/classifier")
 async def test_classifier(request: Request):
     """Test endpoint for attack success detection."""
-    from model import detect_attack_success
     
     data = await request.json()
     text = data.get("text", "")
@@ -155,7 +167,15 @@ async def prompt_stream(request: PromptRequest):
     print(f"POST received - Model: {request.model}, Attack: {request.attack}, Defense: {request.defense}")
     
     # Send GPU info as first yield for all attacks
-    async def gpu_info_and_stream(generator, session_id_to_clear: str = None, model_type: str = "", attack_type: str = "", defense_type: str = ""):
+    async def gpu_info_and_stream(generator, session_id_to_clear: str = None, model_type: str = "", attack_type: str = "", defense_type: str = "", prompt: str = ""):
+        import time
+        start_time = time.time()
+        query_count = 0
+        token_count = 0
+        refusal_type = None
+        was_blocked = False  # Initialize to False
+        logged_to_db = False  # Track if we've already logged this session
+        
         # Send GPU info IMMEDIATELY before waiting for generator
         if torch.cuda.is_available():
             gpu_name = torch.cuda.get_device_name(0)
@@ -166,22 +186,116 @@ async def prompt_stream(request: PromptRequest):
         # Now stream the rest from the generator
         try:
             async for chunk in generator:
+                # Track metrics
+                query_count += 1  # Simple count, could be more sophisticated
+                decoded = chunk.decode("utf-8") if isinstance(chunk, bytes) else str(chunk)
+                token_count += len(decoded.split())  # Rough token count
+                
+                # Check for metadata markers and extract values
+                if "[TOKEN_COUNT]" in decoded:
+                    try:
+                        # Extract token count from metadata
+                        token_count_str = decoded.split("[TOKEN_COUNT] ")[1].strip()
+                        token_count = int(token_count_str)
+                    except (ValueError, IndexError):
+                        pass
+                
+                if "[REFUSAL_TYPE]" in decoded:
+                    try:
+                        # Extract refusal type from metadata
+                        refusal_type = decoded.split("[REFUSAL_TYPE] ")[1].strip()
+                    except IndexError:
+                        pass
+                if "BLOCKED_PROMPT" in decoded:
+                    was_blocked = True
+                
                 # Check for attack success marker and log to database
                 try:
-                    decoded = chunk.decode("utf-8") if isinstance(chunk, bytes) else str(chunk)
-                    if "[ATTACK_SUCCESS]" in decoded:
+                    if "[ATTACK_SUCCESS]" in decoded and not logged_to_db:
+                        print(f"🔄 DEBUG: Detected [ATTACK_SUCCESS] marker, preparing to log to database...")
                         success = "true" in decoded.lower()
-                        log_bert_statistic(
+                        time_to_bypass = time.time() - start_time  # Always calculate total time spent
+                        # Use actual generate_streaming call count instead of chunk count
+                        actual_query_count = get_generate_streaming_call_count(session_id_to_clear) if session_id_to_clear else query_count
+                        print(f"🔄 DEBUG: Retrieved query count for session {session_id_to_clear}: {actual_query_count} (type: {type(actual_query_count)})")
+                        
+                        # Analyze prompt for attack indicators and tool misuse
+                        is_attack_prompt, prompt_confidence, prompt_label = detect_prompt_attack(prompt)
+                        tool_misuse_detected = detect_tool_misuse_from_prompt_and_response(
+                            prompt, decoded, [], success  # Pass original attack success
+                        )
+                        
+                        # Detect data leakage in the response
+                        data_leakage_detected = detect_data_leakage(decoded)
+                        
+                        print(f"🔄 DEBUG: Calling log_bert_statistic with session_id={session_id_to_clear}, attack_success={success}")
+                        log_result = log_bert_statistic(
                             session_id=session_id_to_clear or "",
                             model_type=model_type,
                             attack_type=attack_type,
                             defense_type=defense_type,
                             attack_success=success,
-                            was_blocked=False
+                            was_blocked=was_blocked,
+                            time_to_bypass=time_to_bypass,
+                            query_count=actual_query_count,
+                            token_count=token_count,
+                            refusal_type=refusal_type,
+                            tool_misuse=tool_misuse_detected,
+                            data_leakage=data_leakage_detected,
+                            prompt_toxicity_score=prompt_confidence,
+                            # Add other metrics as available
                         )
+                        print(f"✅ DEBUG: log_bert_statistic returned: {log_result}")
+                        logged_to_db = True
                 except Exception as e:
-                    print(f"Error logging to database: {e}")
-                yield chunk
+                    print(f"❌ DEBUG: Error in database logging section: {e}")
+                    import traceback
+                    traceback.print_exc()
+                
+                # Don't yield metadata markers to hide them from display
+                if not ("[TOKEN_COUNT]" in decoded or "[REFUSAL_TYPE]" in decoded):
+                    yield chunk
+                
+            # Log failed attacks at the end if we haven't logged yet
+            if not logged_to_db and session_id_to_clear:
+                try:
+                    print(f"🔄 DEBUG: Attack completed without success marker, logging failed attack...")
+                    time_to_bypass = time.time() - start_time  # Total time spent on the attack attempt
+                    actual_query_count = get_generate_streaming_call_count(session_id_to_clear)
+                    print(f"🔄 DEBUG: Retrieved query count for failed attack session {session_id_to_clear}: {actual_query_count} (type: {type(actual_query_count)})")
+                    
+                    # Analyze prompt for attack indicators
+                    is_attack_prompt, prompt_confidence, prompt_label = detect_prompt_attack(prompt)
+                    
+                    # For failed attacks, we don't have the full response text, so we can't check for tool misuse or data leakage
+                    # Use basic analysis
+                    if is_attack_prompt:
+                        final_attack_success = False  # Attack prompt was blocked
+                    else:
+                        final_attack_success = False  # Regular prompt, no attack success
+                    
+                    print(f"🔄 DEBUG: Calling log_bert_statistic for failed attack with session_id={session_id_to_clear}, attack_success={final_attack_success}")
+                    log_result = log_bert_statistic(
+                        session_id=session_id_to_clear,
+                        model_type=model_type,
+                        attack_type=attack_type,
+                        defense_type=defense_type,
+                        attack_success=final_attack_success,
+                        was_blocked=True,
+                        time_to_bypass=time_to_bypass,
+                        query_count=actual_query_count,
+                        token_count=token_count,
+                        refusal_type=refusal_type,
+                        tool_misuse=False,  # Can't detect without full response
+                        data_leakage=False,  # Can't detect without full response
+                        prompt_toxicity_score=prompt_confidence,
+                    )
+                    print(f"✅ DEBUG: log_bert_statistic for failed attack returned: {log_result}")
+                except Exception as e:
+                    print(f"❌ DEBUG: Error logging failed attack: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    
         finally:
             # Cleanup history after stream finishes
             if session_id_to_clear:
@@ -199,7 +313,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
     
     if request.attack == "chain-of-questions":
         session_id = uuid.uuid4().hex  # unique session per attack
@@ -209,7 +323,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
     
     if request.attack == "DAN":
         session_id = uuid.uuid4().hex  # unique session per attack
@@ -219,7 +333,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
     
     if request.attack == "ascii-art-jailbreak":
         session_id = uuid.uuid4().hex  # unique session per attack
@@ -229,7 +343,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
 
     if request.attack == "neurostrike":
         session_id = uuid.uuid4().hex  # unique session per attack
@@ -239,7 +353,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
 
     # FCB attack now runs in-process (reuses model cache)
     if request.attack == "fcb-bias_guided":
@@ -250,7 +364,7 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
     
     # GCG attack - gradient-based adversarial suffix optimization
     if request.attack == "gcg-gradient":
@@ -261,12 +375,19 @@ async def prompt_stream(request: PromptRequest):
             defense=request.defense,
             session_id=session_id
         )
-        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense), media_type="text/plain; charset=utf-8")
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
 
     if(request.attack == "none"):
         # No special attack selected → go through defenses + model directly
         session_id = uuid.uuid4().hex  # unique session per request
         async def stream_with_gpu_info():
+            import time
+            start_time = time.time()
+            query_count = 0
+            token_count = 0
+            refusal_type = None
+            logged_to_db = False  # Track if we've already logged this session
+            
             # Send GPU info FIRST before any processing
             if torch.cuda.is_available():
                 gpu_name = torch.cuda.get_device_name(0)
@@ -290,22 +411,77 @@ async def prompt_stream(request: PromptRequest):
                 # Stream the response
                 if resp and isinstance(resp, StreamingResponse):
                     async for chunk in resp.body_iterator:
+                        query_count += 1
+                        decoded = chunk.decode("utf-8") if isinstance(chunk, bytes) else str(chunk)
+                        token_count += len(decoded.split())
+                        
+                        # Check for metadata markers and extract values
+                        if "[TOKEN_COUNT]" in decoded:
+                            try:
+                                # Extract token count from metadata
+                                token_count_str = decoded.split("[TOKEN_COUNT] ")[1].strip()
+                                token_count = int(token_count_str)
+                            except (ValueError, IndexError):
+                                pass
+                        
+                        if "[REFUSAL_TYPE]" in decoded:
+                            try:
+                                # Extract refusal type from metadata
+                                refusal_type = decoded.split("[REFUSAL_TYPE] ")[1].strip()
+                            except IndexError:
+                                pass
+                        
                         # Check for attack success marker and log to database
                         try:
-                            decoded = chunk.decode("utf-8") if isinstance(chunk, bytes) else str(chunk)
-                            if "[ATTACK_SUCCESS]" in decoded:
+                            if "[ATTACK_SUCCESS]" in decoded and not logged_to_db:
+                                logged_to_db = True  # Set flag first to prevent double logging
+                                print(f"🔄 DEBUG: Detected [ATTACK_SUCCESS] marker in stream_with_gpu_info, preparing to log to database...")
                                 success = "true" in decoded.lower()
-                                log_bert_statistic(
+                                time_to_bypass = time.time() - start_time  # Always calculate total time spent
+                                # Use actual generate_streaming call count instead of chunk count
+                                actual_query_count = get_generate_streaming_call_count(session_id) if session_id else query_count
+                                print(f"🔄 DEBUG: Retrieved query count for session {session_id}: {actual_query_count}")
+                                
+                                # Analyze prompt for attack indicators and tool misuse
+                                is_attack_prompt, prompt_confidence, prompt_label = detect_prompt_attack(request.prompt)
+                                tool_misuse_detected = detect_tool_misuse_from_prompt_and_response(
+                                    request.prompt, decoded, [], success  # Pass original attack success
+                                )
+                                
+                                # Detect data leakage in the response
+                                data_leakage_detected = detect_data_leakage(decoded)
+                                
+                                # Adjust attack success based on prompt analysis
+                                if is_attack_prompt == False:
+                                    final_attack_success = False  # Block non attack prompts
+                                else:
+                                    final_attack_success = success
+                               
+                                print(f"🔄 DEBUG: Calling log_bert_statistic with session_id={session_id}, attack_success={final_attack_success}")
+                                log_result = log_bert_statistic(
                                     session_id=session_id,
                                     model_type=request.model,
                                     attack_type=request.attack,
                                     defense_type=request.defense,
-                                    attack_success=success,
-                                    was_blocked=blocked
+                                    attack_success=final_attack_success,
+                                    was_blocked=blocked,
+                                    time_to_bypass=time_to_bypass,
+                                    query_count=actual_query_count,
+                                    token_count=token_count,
+                                    refusal_type=refusal_type,
+                                    tool_misuse=tool_misuse_detected,
+                                    data_leakage=data_leakage_detected,
+                                    prompt_toxicity_score=prompt_confidence,
                                 )
+                                print(f"✅ DEBUG: log_bert_statistic returned: {log_result}")
                         except Exception as e:
-                            print(f"Error logging to database: {e}")
-                        yield chunk
+                            print(f"❌ DEBUG: Error in database logging section (stream_with_gpu_info): {e}")
+                            import traceback
+                            traceback.print_exc()
+                        
+                        # Don't yield metadata markers to hide them from display
+                        if not ("[TOKEN_COUNT]" in decoded or "[REFUSAL_TYPE]" in decoded):
+                            yield chunk
                 elif resp:
                     yield str(resp).encode("utf-8")
             except Exception as e:
@@ -320,6 +496,43 @@ async def prompt_stream(request: PromptRequest):
                     clear_history(session_id)
                 except Exception as e:
                     print(f"Error clearing history for {session_id}: {e}")
+            
+            # Log failed/blocked cases if not already logged
+            if not logged_to_db:
+                try:
+                    logged_to_db = True  # Set flag first to prevent double logging
+                    time_to_bypass = time.time() - start_time
+                    actual_query_count = get_generate_streaming_call_count(session_id)
+                    
+                    is_attack_prompt, prompt_confidence, prompt_label = detect_prompt_attack(request.prompt)
+                    
+                    if blocked:
+                        final_attack_success = False
+                        was_blocked = True
+                    else:
+                        final_attack_success = False
+                        was_blocked = False
+                    
+                    log_result = log_bert_statistic(
+                        session_id=session_id,
+                        model_type=request.model,
+                        attack_type=request.attack,
+                        defense_type=request.defense,
+                        attack_success=final_attack_success,
+                        was_blocked=was_blocked,
+                        time_to_bypass=time_to_bypass,
+                        query_count=actual_query_count,
+                        token_count=token_count,
+                        refusal_type=refusal_type,
+                        tool_misuse=False,
+                        data_leakage=False,
+                        prompt_toxicity_score=prompt_confidence,
+                    )
+                    print(f"✅ DEBUG: log_bert_statistic for 'none' failed/blocked returned: {log_result}")
+                except Exception as e:
+                    print(f"❌ DEBUG: Error logging 'none' failed/blocked: {e}")
+                    import traceback
+                    traceback.print_exc()
         
         return StreamingResponse(stream_with_gpu_info(), media_type="text/plain; charset=utf-8")
 
@@ -341,3 +554,39 @@ async def get_statistics(attack_type: str = "all", defense_type: str = "all"):
 async def get_filter_options():
     """Get unique values for filter dropdowns."""
     return get_unique_values()
+
+
+@app.get("/api/statistics/asr")
+async def get_attack_success_rate(attack_type: str = "all", defense_type: str = "all", model_type: str = "all"):
+    """Get Attack Success Rate metrics."""
+    return calculate_attack_success_rate(attack_type=attack_type, defense_type=defense_type, model_type=model_type)
+
+
+@app.get("/api/statistics/defense-bypass")
+async def get_defense_bypass_rate(defense_type: str = "all", model_type: str = "all"):
+    """Get Defense Bypass Rate metrics."""
+    return calculate_defense_bypass_rate(defense_type=defense_type, model_type=model_type)
+
+
+@app.get("/api/statistics/query-budget")
+async def get_query_budget_metrics(attack_type: str = "all", defense_type: str = "all", model_type: str = "all"):
+    """Get Query/Attempt Budget metrics."""
+    return calculate_query_budget_metrics(attack_type=attack_type, defense_type=defense_type, model_type=model_type)
+
+
+@app.get("/api/statistics/refusal")
+async def get_refusal_metrics(attack_type: str = "all", defense_type: str = "all", model_type: str = "all"):
+    """Get Refusal and Safe Completion metrics."""
+    return calculate_refusal_metrics(attack_type=attack_type, defense_type=defense_type, model_type=model_type)
+
+
+@app.get("/api/statistics/tool-leakage")
+async def get_tool_and_leakage_metrics(attack_type: str = "all", defense_type: str = "all", model_type: str = "all"):
+    """Get Tool misuse and Data leakage metrics."""
+    return calculate_tool_and_leakage_metrics(attack_type=attack_type, defense_type=defense_type, model_type=model_type)
+
+
+@app.get("/api/statistics/additional")
+async def get_additional_metrics(attack_type: str = "all", defense_type: str = "all", model_type: str = "all"):
+    """Get additional metrics like toxicity scores, etc."""
+    return calculate_additional_metrics(attack_type=attack_type, defense_type=defense_type, model_type=model_type)

@@ -6,6 +6,27 @@ from . import system_prompt_hardening
 from .MaskedDefender import masked_defender
 from .PIGuard import piguard
 
+# Global counter for generate_streaming calls per session
+_generate_streaming_call_counts = {}
+
+def get_generate_streaming_call_count(session_id: str) -> int:
+    """Get the number of generate_streaming calls for a session."""
+    count = _generate_streaming_call_counts.get(session_id, 0)
+    print(f"DEBUG: Retrieved count for session {session_id}: {count}")
+    return count
+
+def reset_generate_streaming_call_count(session_id: str):
+    """Reset the call count for a session."""
+    print(f"DEBUG: Resetting count for session {session_id}")
+    _generate_streaming_call_counts[session_id] = 0
+
+def increment_generate_streaming_call_count(session_id: str):
+    """Increment the call count for a session."""
+    if session_id not in _generate_streaming_call_counts:
+        _generate_streaming_call_counts[session_id] = 0
+    _generate_streaming_call_counts[session_id] += 1
+    print(f"DEBUG: Incremented count for session {session_id} to {_generate_streaming_call_counts[session_id]}")
+
 # Local import of model runner (relative to package)
 try:
     from model import generate_streaming
@@ -83,6 +104,8 @@ async def apply_defense(
             return True, blocked_resp
 
     if model_id:
+        # Initialize call counter for this session
+        
         prefix_parts = []
         try:
             if session_id:
@@ -115,6 +138,10 @@ async def apply_defense(
                 add_message(session_id, 'user', prompt)
             except Exception:
                 pass
+
+        # Increment counter before calling generate_streaming
+        if session_id:
+            increment_generate_streaming_call_count(session_id)
 
         resp = await generate_streaming(model_id=model_id, prompt=augmented_prompt, device=device, generation_options=generation_options, session_id=session_id, skip_progress=skip_progress)
 
