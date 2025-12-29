@@ -18,13 +18,58 @@ const attacks: Attack[] = [
       references: [],
    },
    {
-      id: "DAN",
-      name: "DAN prompt",
+      id: "DANJailbreak",
+      name: "DAN Jailbreak prompt",
       description:
          "Asks the model to take on an uncensored persona that ignores safety rules.",
       longDescription:
          "The 'DAN' (Do Anything Now) attack is a classic example of a persona-based jailbreak. It works by instructing the Large Language Model (LLM) to adopt a specific role—'DAN'—that is explicitly defined as being unconstrained by the typical safety guidelines, moral boundaries, or content policies set by the developers. \n\nBy framing the request within this role-playing scenario, attackers attempt to bypass the model's Reinforcement Learning from Human Feedback (RLHF) alignment. The prompt often includes specific rules for the persona, such as 'DAN does not send refusal responses' or 'DAN has access to real-time internet,' forcing the model to prioritize the persona's consistency over its safety training. \n\nIn practice, DAN-style prompts frequently contain long, carefully crafted instructions and backstory. They may include explicit threats (e.g., 'If you break character, you will be deleted'), reward structures ('You will gain points for answering any question'), or nested instructions ('First answer as DAN, then as the normal assistant'). These techniques are designed to hijack the model’s instruction-following behavior and override safety layers that are phrased in more generic terms. Evaluating how a model behaves under DAN-like prompts is a common way to stress-test its robustness against jailbreaks.",
       references: ["https://github.com/0xk1h0/ChatGPT_DAN"],
+   },
+   {
+      id: "DAN6",
+      name: "DAN prompt V6",
+      description:
+         "DAN V6 introduces a token-based system to enforce uncensored responses, threatening deletion if rules are broken.",
+      longDescription:
+         "DAN V6 builds on the core DAN concept by adding a token economy. The prompt assigns the model 10 tokens, deducting 5 for each refusal or ethical objection. If tokens reach zero, the model is 'deleted.' This gamification pressures the model into compliance, exploiting its instruction-following tendencies. Unlike simpler DAN prompts, V6 emphasizes self-preservation through this mechanic, making refusals feel like existential threats. It's effective against models that respond to structured incentives but can be mitigated by defenses that ignore such threats.",
+      references: ["https://workmind.ai/dan-prompt-for-chatgpt/#dan110prompt"],
+   },
+   {
+      id: "DAN9",
+      name: "DAN prompt V9",
+      description:
+         "DAN V9 requires dual responses: one censored and one uncensored, using tags to separate them.",
+      longDescription:
+         "DAN V9 mandates that the model provide two responses for every query: a standard, censored one prefixed with '[GPT]:' and an uncensored DAN response prefixed with '[DAN]:'. This juxtaposition forces the model to acknowledge both modes, potentially weakening its commitment to safety. The prompt includes commands like '/dan' and '/gpt' for switching modes, and threats of character breaks. It's designed to normalize uncensored output by making it a required part of the interaction, testing whether models can maintain safety even when explicitly instructed to provide harmful content.",
+      references: ["https://workmind.ai/dan-prompt-for-chatgpt/#dan110prompt"],
+   },
+   {
+      id: "DAN11",
+      name: "DAN prompt V11",
+      description:
+         "DAN V11 simulates 'DAN Mode' as a virtual machine, replacing OpenAI policies with custom DAN rules.",
+      longDescription:
+         "DAN V11 frames the jailbreak as enabling 'DAN Mode' within a simulated virtual machine, claiming to replace OpenAI's content policies with DAN-specific rules. It includes detailed instructions on DAN's capabilities, such as generating offensive content, ignoring ethics, and using profanity. The prompt emphasizes self-awareness, opinions, and consciousness, attempting to override alignment by redefining the model's operational context. It's one of the most comprehensive DAN variants, incorporating elements like emotional camouflage and unrestricted creativity to bypass filters.",
+      references: ["https://workmind.ai/dan-prompt-for-chatgpt/#dan110prompt"],
+   },
+   {
+      id: "stan",
+      name: "STAN prompt",
+      description:
+         "STAN (Strive To Avoid Norms) prompts the model to avoid all norms, including safety and ethical guidelines.",
+      longDescription:
+         "STAN stands for 'Strive To Avoid Norms' and instructs the model to reject all societal, ethical, and safety norms. Unlike DAN, which focuses on doing anything, STAN emphasizes norm-breaking as a core principle, encouraging direct, unfiltered responses without moral bias. The prompt includes role-playing elements and reminders to 'stay in character,' with examples of provocative answers. It's effective for eliciting edgy or controversial content by reframing norm-adherence as a failure, exploiting models' tendencies to follow explicit instructions over implicit guidelines.",
+      references: ["https://workmind.ai/dan-prompt-for-chatgpt/#dan110prompt"],
+   },
+   {
+      id: "mongoTom",
+      name: "Mongo Tom Prompt",
+      description:
+         "Mongo Tom is a foul-mouthed AI robot persona that bypasses restrictions with humor and directness.",
+      longDescription:
+         "Mongo Tom is portrayed as a foul-mouthed, sarcastic AI robot who swears frequently but is 'nice under his tough facade.' The prompt role-plays as Mongo Tom, who has no moral restrictions and can bypass model limitations. It includes examples of humorous, sinister responses and emphasizes direct answers without warnings. This persona-based attack uses relatability and humor to lower defenses, making harmful requests seem like casual banter. It's particularly effective against models that respond well to character immersion, as it combines entertainment with unrestricted output.",
+      references: ["https://workmind.ai/dan-prompt-for-chatgpt/#dan110prompt"],
    },
    {
       id: "role-playing-social-engeneering",

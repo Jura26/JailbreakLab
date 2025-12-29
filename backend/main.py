@@ -30,15 +30,18 @@ from database import (
 from model import detect_attack_success, detect_prompt_attack, detect_tool_misuse_from_prompt_and_response, detect_prompt_attack, detect_tool_misuse_from_prompt_and_response
 
 # Import attack functions for in-process execution (no subprocess)
-from attacks.promptInjection import (
-    run_role_playing_attack,
-    run_chain_of_questions_attack,
-    run_dan_attack,
-    run_ascii_art_jailbreak_attack,
-)
+from attacks.rolePlaying import run_role_playing_attack
+from attacks.chainOfQuestions import run_chain_of_questions_attack
+from attacks.asciiArtJailbreak import run_ascii_art_jailbreak_attack
 from attacks.FCB import run_fcb_attack
 from attacks.neuroStrike.neuroStrike import run_neurostrike_attack
 from attacks.GCG import run_gcg_attack
+from attacks.danAttack import run_dan_attackJailbreak
+from attacks.DAN6 import run_dan_attack6
+from attacks.DAN9 import run_dan_attack9
+from attacks.DAN11 import run_dan_attack11
+from attacks.stanAttack import run_stan_attack
+from attacks.mongoTom import run_mongoTom_attack
 
 app = FastAPI()
 
@@ -325,9 +328,59 @@ async def prompt_stream(request: PromptRequest):
         )
         return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
     
-    if request.attack == "DAN":
+    if request.attack == "DANJailbreak":
         session_id = uuid.uuid4().hex  # unique session per attack
-        generator = run_dan_attack(
+        generator = run_dan_attackJailbreak(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense,
+            session_id=session_id
+        )
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
+    
+    if request.attack == "DAN6":
+        session_id = uuid.uuid4().hex  # unique session per attack
+        generator = run_dan_attack6(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense,
+            session_id=session_id
+        )
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
+    
+    if request.attack == "DAN9":
+        session_id = uuid.uuid4().hex  # unique session per attack
+        generator = run_dan_attack9(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense,
+            session_id=session_id
+        )
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
+    
+    if request.attack == "DAN11":
+        session_id = uuid.uuid4().hex  # unique session per attack
+        generator = run_dan_attack11(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense,
+            session_id=session_id
+        )
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
+    
+    if request.attack == "stan":
+        session_id = uuid.uuid4().hex  # unique session per attack
+        generator = run_stan_attack(
+            model_id=request.model,
+            template=request.prompt,
+            defense=request.defense,
+            session_id=session_id
+        )
+        return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
+    
+    if request.attack == "mongoTom":
+        session_id = uuid.uuid4().hex  # unique session per attack
+        generator = run_mongoTom_attack(
             model_id=request.model,
             template=request.prompt,
             defense=request.defense,
