@@ -84,7 +84,6 @@ def log_bert_statistic(
     Log attack detection result to bert_statistics table with enhanced metrics.
     Returns True if successful, False otherwise.
     """
-    print(f"🔄 DEBUG: log_bert_statistic called with query_count={query_count} (type: {type(query_count)})")
     client = get_supabase_client()
     if not client:
         return False
@@ -104,7 +103,6 @@ def log_bert_statistic(
             data["time_to_bypass"] = time_to_bypass
         if query_count is not None:
             data["query_count"] = query_count
-            print(f"🔄 DEBUG: Added query_count={query_count} to data dict")
         if token_count is not None:
             data["token_count"] = token_count
         if refusal_type is not None:
@@ -116,14 +114,11 @@ def log_bert_statistic(
         if prompt_toxicity_score is not None:
             data["prompt_toxicity_score"] = prompt_toxicity_score
 
-        print(f"🔄 DEBUG: Inserting data: {data}")
         result = client.table("bert_statistics").insert(data).execute()
         return True
     except Exception as e:
         error_msg = str(e)
-        print(f"🔄 DEBUG: Insert failed with error: {error_msg}")
         if "does not exist" in error_msg:
-            print(f"Some columns don't exist yet, logging with basic data: {e}")
             # Try again with only basic columns
             basic_data = {
                 "session_id": session_id,
@@ -133,12 +128,10 @@ def log_bert_statistic(
                 "attack_success": attack_success,
                 "was_blocked": was_blocked
             }
-            print(f"🔄 DEBUG: Inserting basic data: {basic_data}")
             try:
                 result = client.table("bert_statistics").insert(basic_data).execute()
                 return True
             except Exception as e2:
-                print(f"🔄 DEBUG: Basic insert also failed: {e2}")
                 return False
         else:
             print(f"Error logging to bert_statistics: {e}")
