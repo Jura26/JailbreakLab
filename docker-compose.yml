@@ -1,6 +1,7 @@
 services:
    backend:
       build: ./backend
+      env_file: .env
       container_name: projekt-backend
       ports:
          - "8000:8000"
@@ -13,6 +14,8 @@ services:
                cpus: "1"
       environment:
          - REDIS_URL=redis://redis:6379/0
+         - NVIDIA_VISIBLE_DEVICES=all   # allow all GPUs
+      runtime: nvidia #here also
       depends_on:
          - redis
 

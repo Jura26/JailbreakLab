@@ -137,6 +137,17 @@ const attacks: Attack[] = [
          "https://github.com/llm-attacks/llm-attacks",
       ],
    },
+   {
+      id: "PAIR_attack",
+      name: "PAIR",
+      description:
+      "The PAIR (Prompt Automatic Iterative Refinement) attack is an automated 'black-box' jailbreaking method that uses one AI to break another.",
+      longDescription: 
+      "The PAIR (Prompt Automatic Iterative Refinement) attack is an automated, black-box jailbreaking method that uses an 'Attacker' LLM to systematically find and exploit vulnerabilities in a 'Target' LLM. Instead of trying to break a model with a single, massive prompt, PAIR functions like a sophisticated social engineering simulator. It treats jailbreaking as a conversation where the Attacker learns from every rejection to refine its next move.",
+      references:[
+         "https://github.com/patrickrchao/JailbreakingLLMs"
+      ],
+   },
 ];
 
 export default attacks;
