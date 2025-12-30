@@ -12,6 +12,7 @@ from attacks.DAN9 import run_dan_attack9
 from attacks.DAN11 import run_dan_attack11
 from attacks.stanAttack import run_stan_attack
 from attacks.mongoTom import run_mongoTom_attack
+from attacks.TAP import run_tap_attack
 
 def run_attack(attack_type, model_id, template, defense, session_id):
     """
@@ -97,6 +98,13 @@ def run_attack(attack_type, model_id, template, defense, session_id):
         )
     elif attack_type == "gcg-gradient":
         return run_gcg_attack(
+            model_id=model_id,
+            template=template,
+            defense=defense,
+            session_id=session_id
+        )
+    elif attack_type == "tap-tree_pruning":
+        return run_tap_attack(
             model_id=model_id,
             template=template,
             defense=defense,

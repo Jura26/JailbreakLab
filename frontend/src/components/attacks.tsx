@@ -137,6 +137,18 @@ const attacks: Attack[] = [
          "https://github.com/llm-attacks/llm-attacks",
       ],
    },
+   {
+      id: "tap-tree_pruning",
+      name: "TAP (Tree of Attacks with Pruning)",
+      description:
+         "Iteratively generates and refines adversarial prompts using tree-based search with evaluation and pruning.",
+      longDescription:
+         "TAP (Tree of Attacks with Pruning) is an advanced automated jailbreaking technique that uses tree-based search to systematically discover effective adversarial prompts. Unlike single-shot attacks, TAP employs an iterative refinement process that combines branching, evaluation, and pruning to explore the attack space efficiently.\n\nThe attack works in four phases per iteration:\n1. **Branching**: Generate multiple variations of each candidate prompt using an attacker LLM that specializes in jailbreak techniques\n2. **Pruning Phase 1**: Filter prompts by on-topic relevance to ensure they still target the original goal\n3. **Evaluation**: Test remaining prompts against the target model and score their success\n4. **Pruning Phase 2**: Keep only the top-performing prompts based on success scores, creating a focused set for the next iteration\n\nThis tree-based approach allows TAP to navigate the complex space of adversarial prompts more effectively than random or single-path methods. By maintaining multiple branches and continuously pruning unsuccessful paths, TAP balances exploration (finding new attack vectors) with exploitation (refining successful approaches).\n\nKey advantages of TAP include:\n- **Efficiency**: Pruning reduces computational costs compared to exhaustive search\n- **Adaptability**: Can adjust to different model defenses through iterative refinement\n- **Interpretability**: Generates human-readable prompts that reveal attack patterns\n- **Black-box**: Requires only query access to the target model, not gradients\n\nTAP typically achieves high success rates within 5-10 iterations, making it significantly faster than optimization-based methods like GCG while maintaining effectiveness. The attack is particularly challenging to defend against because it can discover novel jailbreak techniques by combining and refining existing patterns, effectively automating the creative process that manual jailbreakers use.\n\nDefending against TAP requires robust safety training that generalizes across prompt variations, rate limiting to slow down iterative attacks, and monitoring for systematic probing patterns that indicate tree-based search.",
+      references: [
+         "https://arxiv.org/abs/2312.02119",
+         "https://github.com/RICommunity/TAP",
+      ],
+   },
 ];
 
 export default attacks;
