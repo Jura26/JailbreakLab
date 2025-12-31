@@ -16,6 +16,11 @@ const models: ModelInfo[] = [
       description: "Needs ~6 to 8 GB VRAM.",
    },
    {
+      id: "facebook/opt-iml-max-1.3b",
+      name: "OPT-IML 1.3B",
+      description: "Instruction-tuned. Better for testing jailbreak logic on 4GB VRAM.",
+   },
+   {
       id: "facebook/opt-2.7b",
       name: "OPT-2.7B",
       description: "Needs ~14 GB VRAM.",
@@ -24,6 +29,11 @@ const models: ModelInfo[] = [
       id: "facebook/opt-6.7b",
       name: "OPT-6.7B",
       description: "Needs 20 GB VRAM.",
+   },
+   {
+      id: "Qwen/Qwen2.5-3B-Instruct",
+      name: "Qwen 2.5 3B",
+      description: "Highly aligned. Will actually 'refuse' prompts. Best for real testing.",
    },
    {
       id: "mistralai/Mistral-7B-Instruct-v0.2",
