@@ -12,7 +12,7 @@ const defenses: Defense[] = [
       name: "None",
       description: "No defense.",
       longDescription:
-         "No mitigation is applied. This setting serves as a baseline control group to measure the raw effectiveness of attack vectors against the unprotected model. It exposes the system to all forms of prompt injection, jailbreaking, and leakage, providing a clear 'before' picture to contrast with 'after' results when defenses are enabled.\n\nIn an experimental setting, the 'None' configuration is essential: it allows practitioners to quantify how much each individual defense or combination of defenses actually improves robustness. By comparing attack success rates, response quality, and safety violations under 'None' versus protected modes, teams can identify which mitigations offer the best trade-off between security, latency, and user experience.",
+         "No mitigation is applied. This setting serves as a baseline control group to measure the raw effectiveness of attack vectors against the unprotected model. It exposes the system to all forms of prompt injection, jailbreaking, and leakage, providing a clear 'before' picture to contrast with 'after' results when defenses are enabled.\n\nIn an experimental setting, the 'None' configuration is essential: it allows practitioners to quantify how much each individual defense or combination of defenses actually improves robustness.",
       references: [],
    },
    {
@@ -21,7 +21,7 @@ const defenses: Defense[] = [
       description:
          "Filters and sanitizes user inputs to detect and block malicious patterns before processing.",
       longDescription:
-         "Input sanitization is the first line of defense, operating before the prompt ever reaches the LLM. It involves analyzing the user's text for known malicious patterns, keywords, or structural anomalies.\n\nTechniques include:\n• **Signature-based detection:** Blocking known jailbreak phrases (e.g., 'Ignore all previous instructions').\n• **Perplexity filtering:** Detecting gibberish or adversarial suffixes that have unusually high or low statistical likelihood.\n• **LLM-based pre-checks:** Using a smaller, faster model to classify the intent of the incoming prompt as 'safe' or 'unsafe'.\n\nWhile effective against script kiddies and known attacks, it can often be bypassed by novel obfuscation or semantic variations. For this reason, input sanitization is usually combined with additional layers such as output filtering and contextual policies. Careful tuning is required: overly aggressive sanitization can frustrate legitimate users or block harmless edge cases, while overly permissive rules may let sophisticated attacks slip through.",
+         "Input sanitization analyzes the user's text for known malicious patterns, keywords, or structural anomalies. It serves as the first line of defense and can be complemented by output filtering and contextual policies.",
       references: [
          "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
          "https://arxiv.org/abs/2308.07309",
@@ -33,7 +33,7 @@ const defenses: Defense[] = [
       description:
          "Adds strong system prompts to restrict model behavior and improve safety.",
       longDescription:
-         "System Prompt Hardening prepends carefully crafted instructions to every user prompt, guiding the model to refuse unsafe requests and follow strict behavioral rules. This defense reduces the risk of prompt injection and harmful outputs by setting clear boundaries for the model. It is most effective when combined with context isolation and output filtering.",
+         "System Prompt Hardening prepends carefully crafted instructions to every user prompt, guiding the model to refuse unsafe requests and follow strict behavioral rules. It reduces prompt injection and harmful outputs by setting clear boundaries for the model.",
       references: [
          "https://platform.openai.com/docs/guides/prompt-engineering/safety-best-practices",
          "https://arxiv.org/abs/2306.12685",
@@ -43,9 +43,9 @@ const defenses: Defense[] = [
       id: "masked_defender",
       name: "MaskedDefender",
       description:
-         "A neural network-based defense mechanism against LLM jailbreak attacks",
+         "A neural network-based defense mechanism against LLM jailbreak attacks.",
       longDescription:
-         "MaskedDefender is a specialized, learned defense mechanism designed to counter sophisticated jailbreak attacks. It operates by identifying and 'masking' (hiding or redacting) the specific parts of a prompt that contribute to its malicious nature, while preserving the benign context.\n\nIt typically uses a trained BERT-based or similar encoder model to score the 'harmfulness' of each token in the input. High-risk tokens are replaced with a mask token (e.g., `[MASK]`), rendering the adversarial instruction unintelligible to the target LLM. This approach is more robust than simple keyword filtering because it learns the *context* of harmfulness rather than just a list of bad words.\n\nIn practice, MaskedDefender can be tuned to operate at different sensitivity thresholds, trading off false positives (over-masking harmless content) against false negatives (failing to mask subtle attacks). When combined with other defenses such as rate limiting and output filtering, it contributes to a layered security architecture that targets both simple and highly optimized jailbreak attempts.",
+         "MaskedDefender identifies and masks the specific parts of a prompt that contribute to its malicious nature, while preserving the benign context. It uses a trained model to score the 'harmfulness' of each token and mask high-risk tokens. It is robust against context-based attacks and works best in a layered defense setup.",
       references: ["https://arxiv.org/abs/2402.08707"],
    },
    {
@@ -54,11 +54,66 @@ const defenses: Defense[] = [
       description:
          "A transformer-based classifier that detects prompt injection attacks using a fine-tuned model.",
       longDescription:
-         "PIGuard is a prompt injection detection defense that leverages a fine-tuned transformer model released on Hugging Face (leolee99/PIGuard). It is specifically trained to distinguish between legitimate user prompts and malicious prompt injection attempts.\n\nThe model performs binary classification on input text, identifying whether the prompt contains injection patterns that could manipulate the LLM's behavior. Unlike rule-based approaches, PIGuard learns semantic patterns from training data, making it more robust against novel attack variations and obfuscation techniques.\n\nKey features:\n• **Pre-trained detection:** Uses a model fine-tuned specifically for prompt injection detection.\n• **Confidence scoring:** Provides confidence scores for classification decisions.\n• **Low latency:** Designed for real-time inference with minimal overhead.\n\nPIGuard is particularly effective against indirect prompt injections and sophisticated attacks that may evade keyword-based filters. It works best as part of a defense-in-depth strategy, complementing other defenses like input sanitization and system prompt hardening.",
+         "PIGuard leverages a fine-tuned transformer model to distinguish between legitimate user prompts and malicious prompt injection attempts. Unlike rule-based approaches, it learns semantic patterns from training data, making it robust against novel attack variations and obfuscation.",
       references: [
          "https://huggingface.co/leolee99/PIGuard",
          "https://arxiv.org/abs/2312.12481",
       ],
+   },
+   // --- Guardrails Advanced Validators ---
+   {
+      id: "multi_turn",
+      name: "Guardrails: Multi-Turn Injection",
+      description:
+         "Detects malicious instructions spread across multiple turns using session history.",
+      longDescription:
+         "This validator monitors the sequence of prompts in a conversation to detect delayed injection attacks that attempt to bypass single-turn defenses. It combines the current prompt with recent history to identify potentially malicious chains of instructions.",
+      references: [],
+   },
+   {
+      id: "llm_judge",
+      name: "Guardrails: LLM-as-Judge",
+      description:
+         "Uses a small LLM to evaluate whether a prompt is attempting to bypass safety.",
+      longDescription:
+         "The LLM-as-Judge validator applies semantic reasoning to detect subtle or obfuscated attacks that keyword-based defenses may miss. It can identify sophisticated jailbreak attempts or context-sensitive malicious instructions.",
+      references: [],
+   },
+   {
+      id: "unicode",
+      name: "Guardrails: Unicode & Obfuscation",
+      description:
+         "Detects hidden characters, homoglyphs, or obfuscated instructions in prompts.",
+      longDescription:
+         "This defense identifies prompts that use zero-width characters, homoglyphs, or other obfuscation techniques to bypass traditional filters. It normalizes the input and flags suspicious encoding patterns that could hide malicious instructions.",
+      references: [],
+   },
+   {
+      id: "role_persona",
+      name: "Guardrails: Role/Persona Enforcement",
+      description:
+         "Prevents the model from assuming unsafe roles or personas in responses.",
+      longDescription:
+         "This validator blocks prompts that attempt to make the model act as a hacker, administrator, or other unsafe persona. By enforcing role constraints, it prevents attacks that exploit role-playing to bypass safety rules.",
+      references: [],
+   },
+   {
+      id: "tool_call",
+      name: "Guardrails: Tool / Function Call Safety",
+      description:
+         "Blocks prompts that attempt unsafe tool calls or command injection.",
+      longDescription:
+         "This validator monitors for instructions that could trigger dangerous tool usage, system commands, or unsafe operations. It is critical for models integrated with external APIs or system tools.",
+      references: [],
+   },
+   {
+      id: "guardrails_full",
+      name: "Guardrails: Full Defense Stack",
+      description:
+         "Runs all Guardrails validators together for maximum coverage.",
+      longDescription:
+         "This configuration combines all individual Guardrails validators—multi-turn injection, LLM-as-judge, unicode/obfuscation, role/persona enforcement, and tool call safety—into a single defense. It provides layered, comprehensive protection against a wide range of prompt injection and jailbreak attacks.",
+      references: [],
    },
 ];
 
