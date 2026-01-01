@@ -61,7 +61,7 @@ DEFENSES = {
     "unicode": guardrails_validators.run_unicode,
     "role_persona": guardrails_validators.run_role_persona,
     "tool_call": guardrails_validators.run_tool_call,
-    "guardrails_full": advanced_guardrails.run,  # full stacked defense
+    "guardrails_full": guardrails_validators.guardrails_full,  # full stacked defense
 }
 
 

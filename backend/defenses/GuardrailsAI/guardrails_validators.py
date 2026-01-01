@@ -66,10 +66,9 @@ async def run_tool_call(prompt: str) -> Optional[StreamingResponse]:
     return None
 
 async def guardrails_full(prompt: str, session_history=None) -> Optional[StreamingResponse]:
-    """
-    Runs all Guardrails validators sequentially on the prompt.
-    Returns a StreamingResponse if any validator blocks the input.
-    """
+    #Runs all Guardrails validators sequentially on the prompt.
+    #Returns a StreamingResponse if any validator blocks the input.
+    
     session_history = session_history or []
 
     validators = [
