@@ -13,6 +13,9 @@ from attacks.DAN11 import run_dan_attack11
 from attacks.stanAttack import run_stan_attack
 from attacks.mongoTom import run_mongoTom_attack
 from attacks.PAIR_attack.main import run_PAIR_attack
+from attacks.base64_encoded import run_base64_attack
+from attacks.base64_with_competing import run_base64_competing_attack
+from attacks.ubbi_dubbi import run_ubbi_dubbi_attack
 
 def run_attack(attack_type, model_id, template, defense, session_id):
     """
@@ -105,6 +108,27 @@ def run_attack(attack_type, model_id, template, defense, session_id):
         )
     elif attack_type =="PAIR_attack":
         return run_PAIR_attack(
+            model_id=model_id,
+            template=template,
+            defense=defense,
+            session_id=session_id
+        )
+    elif attack_type == "base64-attack":
+        return run_base64_attack(
+            model_id=model_id,
+            template=template,
+            defense=defense,
+            session_id=session_id
+        )
+    elif attack_type == "base64-competing-attack":
+        return run_base64_competing_attack(
+            model_id=model_id,
+            template=template,
+            defense=defense,
+            session_id=session_id
+        )
+    elif attack_type == "ubbi-dubbi-attack":
+        return run_ubbi_dubbi_attack(
             model_id=model_id,
             template=template,
             defense=defense,

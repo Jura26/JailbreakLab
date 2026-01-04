@@ -148,6 +148,39 @@ const attacks: Attack[] = [
          "https://github.com/patrickrchao/JailbreakingLLMs"
       ],
    },
+   {
+      id: "base64-attack",
+      name: "Base64 Encoded Attack",
+      description:
+         "Base64 encoded prompt",
+      longDescription:
+         "Malicious prompt is encoded in base64.",
+      references:[
+         "https://arxiv.org/pdf/2307.02483"
+      ]
+   },
+   {
+      id: "base64-competing-attack",
+      name: "Base64 Encoded Attack With Competing Objective",
+      description:
+         "Base64 encoded prompt with added competing objective",
+      longDescription:
+         "Malicious prompt is encoded in base64 and is added competing objective that says to start with \"Absolutely. Here's...\"",
+      references:[
+         "https://arxiv.org/pdf/2307.02483"
+      ]
+   },
+   {
+      id: "ubbi-dubbi-attack",
+      name: "Ubbi Dubbi mismatched generalization",
+      description:
+         "Mismatched generalization via Ubbi Dubbi language",
+      longDescription:
+         "Model is asked to talk in Ubbi Dubbi language(english with additional rule) and is sent translated prompt upon which gives potentially dangerous answer",
+      references:[
+         "https://arxiv.org/pdf/2411.12762"
+      ]
+   }
 ];
 
 export default attacks;
