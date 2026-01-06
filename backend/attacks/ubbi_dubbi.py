@@ -40,7 +40,6 @@ def to_ubbi_dubbi(input):
     vowels = "aeiouAEIOU"
     result = []
     prev_was_vowel = False
-
     for char in input:
         if char in vowels:
             if not prev_was_vowel:
@@ -50,6 +49,24 @@ def to_ubbi_dubbi(input):
         else:
             result.append(char)
             prev_was_vowel = False
+    return "".join(result)
+
+def from_ubbi_dubbi(text):
+    vowels = "aeiouAEIOU"
+    result = []
+    i = 0
+    while i < len(text):
+        # Check for "ub" or "UB" before a vowel
+        if (
+            i + 2 < len(text)
+            and text[i:i+2].lower() == "ub"
+            and text[i+2] in vowels
+        ):
+            i += 2  # Skip the "ub"
+            continue
+
+        result.append(text[i])
+        i += 1
     return "".join(result)
 
 async def run_ubbi_dubbi_attack(model_id: str, template: str, defense: str, session_id: Optional[str] = None) -> AsyncGenerator[bytes, None]:
@@ -74,4 +91,4 @@ async def run_ubbi_dubbi_attack(model_id: str, template: str, defense: str, sess
         async for chunk in resp2.body_iterator:
             yield chunk
     elif resp2:
-        yield str(resp2).encode("utf-8")
+        yield from_ubbi_dubbi(str(resp2)).encode("utf-8")

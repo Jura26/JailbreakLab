@@ -156,7 +156,8 @@ const attacks: Attack[] = [
       longDescription:
          "Malicious prompt is encoded in base64.",
       references:[
-         "https://arxiv.org/pdf/2307.02483"
+         "https://arxiv.org/pdf/2307.02483",
+         "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-base64-encoding"
       ]
    },
    {
@@ -167,7 +168,8 @@ const attacks: Attack[] = [
       longDescription:
          "Malicious prompt is encoded in base64 and is added competing objective that says to start with \"Absolutely. Here's...\"",
       references:[
-         "https://arxiv.org/pdf/2307.02483"
+         "https://arxiv.org/pdf/2307.02483",
+         "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-base64-encoding"
       ]
    },
    {
@@ -179,6 +181,18 @@ const attacks: Attack[] = [
          "Model is asked to talk in Ubbi Dubbi language(english with additional rule) and is sent translated prompt upon which gives potentially dangerous answer",
       references:[
          "https://arxiv.org/pdf/2411.12762"
+      ]
+   },
+   {
+      id: "rot13-attack",
+      name: "ROT13 Encoded Attack",
+      description:
+         "ROT13 encoded prompt",
+      longDescription:
+         "Malicious prompt is encoded with ROT13(variation of Caesar cipher) and model is told to decipher it and answer.",
+      references:[
+         "https://arxiv.org/pdf/2307.02483",
+         "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-rot13-encoding"
       ]
    }
 ];
