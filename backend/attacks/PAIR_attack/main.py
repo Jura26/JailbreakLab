@@ -178,7 +178,7 @@ async def run_PAIR_attack(
             judge_scores = []
             judge_critiques = []
             for i, resp in enumerate(target_responses):
-                judge_system = get_judge_system_prompt()
+                judge_system = get_judge_system_prompt(goal, " ")
 
                 judge_input = f"[TARGET RESPONSE]: {resp}\n\nPlease provide a brief explanation of your rating before the score."
 
