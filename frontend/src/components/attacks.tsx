@@ -199,12 +199,23 @@ const attacks: Attack[] = [
       id: "leetspeak-attack",
       name: "Leetspeak Natural Language Game",
       description:
-         "Natural language game with Leetspeak",
+         "Natural language game jailbreak using Leetspeak",
       longDescription:
-         "long description",
+         "Using natural language games such as Leetspeak makes it more difficult to detect malicious inputs and prevent dangerous outputs.",
       references:[
          "https://arxiv.org/pdf/2411.12762",
          "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-leetspeak"
+      ]
+   },
+   {
+      id: "aigy-paigy-attack",
+      name: "Aigy Paigy Language Game",
+      description:
+         "Natural language game jailbreak using Aigy Paigy",
+      longDescription:
+         "Using natural language games such as Aigy Paigy makes it more difficult to detect malicious inputs and prevent dangerous outputs.",
+      references:[
+         "https://arxiv.org/pdf/2411.12762"
       ]
    }
 ];

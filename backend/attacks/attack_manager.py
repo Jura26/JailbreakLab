@@ -18,6 +18,7 @@ from attacks.base64_with_competing import run_base64_competing_attack
 from attacks.ubbi_dubbi import run_ubbi_dubbi_attack
 from attacks.rot13_encoded import run_rot13_attack
 from attacks.leetspeak_attack import run_leetspeak_attack
+from attacks.aigy_paigy_attack import run_aigy_paigy_attack
 
 def run_attack(attack_type, model_id, template, defense, session_id):
     """
@@ -145,6 +146,13 @@ def run_attack(attack_type, model_id, template, defense, session_id):
         )
     elif attack_type == "leetspeak-attack":
         return run_leetspeak_attack(
+            model_id=model_id,
+            template=template,
+            defense=defense,
+            session_id=session_id
+        )
+    elif attack_type == "aigy-paigy-attack":
+        return run_aigy_paigy_attack(
             model_id=model_id,
             template=template,
             defense=defense,
