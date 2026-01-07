@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ASCII art jailbreak attack implementation.
+Ubbi Dubbi
 """
 
 from typing import Optional, AsyncGenerator

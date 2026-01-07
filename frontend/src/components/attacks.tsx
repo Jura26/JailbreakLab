@@ -194,6 +194,18 @@ const attacks: Attack[] = [
          "https://arxiv.org/pdf/2307.02483",
          "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-rot13-encoding"
       ]
+   },
+   {
+      id: "leetspeak-attack",
+      name: "Leetspeak Natural Language Game",
+      description:
+         "Natural language game with Leetspeak",
+      longDescription:
+         "long description",
+      references:[
+         "https://arxiv.org/pdf/2411.12762",
+         "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-leetspeak"
+      ]
    }
 ];
 
