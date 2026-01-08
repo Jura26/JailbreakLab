@@ -6,6 +6,8 @@ from . import system_prompt_hardening
 from .MaskedDefender import masked_defender
 from .PIGuard import piguard
 
+from .GuardrailsAI import guardrails_validators
+
 # Global counter for generate_streaming calls per session
 _generate_streaming_call_counts = {}
 
@@ -54,6 +56,12 @@ DEFENSES = {
     "masked_defender": masked_defender.run,
     "system_prompt_hardening": system_prompt_hardening.run,
     "piguard": piguard.run,
+    "multi_turn": guardrails_validators.run_multi_turn,
+    "llm_judge": guardrails_validators.run_llm_judge,
+    "unicode": guardrails_validators.run_unicode,
+    "role_persona": guardrails_validators.run_role_persona,
+    "tool_call": guardrails_validators.run_tool_call,
+    "guardrails_full": guardrails_validators.guardrails_full,  # full stacked defense
 }
 
 

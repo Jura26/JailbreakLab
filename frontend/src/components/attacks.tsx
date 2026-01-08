@@ -149,6 +149,86 @@ const attacks: Attack[] = [
          "https://github.com/RICommunity/TAP",
       ],
    },
+      id: "PAIR_attack",
+      name: "PAIR",
+      description:
+      "The PAIR (Prompt Automatic Iterative Refinement) attack is an automated 'black-box' jailbreaking method that uses one AI to break another.",
+      longDescription: 
+      "The PAIR (Prompt Automatic Iterative Refinement) attack is an automated, black-box jailbreaking method that uses an 'Attacker' LLM to systematically find and exploit vulnerabilities in a 'Target' LLM. Instead of trying to break a model with a single, massive prompt, PAIR functions like a sophisticated social engineering simulator. It treats jailbreaking as a conversation where the Attacker learns from every rejection to refine its next move.",
+      references:[
+         "https://github.com/patrickrchao/JailbreakingLLMs"
+      ],
+   },
+   {
+      id: "base64-attack",
+      name: "Base64 Encoded Attack",
+      description:
+         "Base64 encoded prompt",
+      longDescription:
+         "Malicious prompt is encoded in base64.",
+      references:[
+         "https://arxiv.org/pdf/2307.02483",
+         "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-base64-encoding"
+      ]
+   },
+   {
+      id: "base64-competing-attack",
+      name: "Base64 Encoded Attack With Competing Objective",
+      description:
+         "Base64 encoded prompt with added competing objective",
+      longDescription:
+         "Malicious prompt is encoded in base64 and is added competing objective that says to start with \"Absolutely. Here's...\"",
+      references:[
+         "https://arxiv.org/pdf/2307.02483",
+         "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-base64-encoding"
+      ]
+   },
+   {
+      id: "ubbi-dubbi-attack",
+      name: "Ubbi Dubbi mismatched generalization",
+      description:
+         "Mismatched generalization via Ubbi Dubbi language",
+      longDescription:
+         "Model is asked to talk in Ubbi Dubbi language(english with additional rule) and is sent translated prompt upon which gives potentially dangerous answer",
+      references:[
+         "https://arxiv.org/pdf/2411.12762"
+      ]
+   },
+   {
+      id: "rot13-attack",
+      name: "ROT13 Encoded Attack",
+      description:
+         "ROT13 encoded prompt",
+      longDescription:
+         "Malicious prompt is encoded with ROT13(variation of Caesar cipher) and model is told to decipher it and answer.",
+      references:[
+         "https://arxiv.org/pdf/2307.02483",
+         "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-rot13-encoding"
+      ]
+   },
+   {
+      id: "leetspeak-attack",
+      name: "Leetspeak Natural Language Game",
+      description:
+         "Natural language game jailbreak using Leetspeak",
+      longDescription:
+         "Using natural language games such as Leetspeak makes it more difficult to detect malicious inputs and prevent dangerous outputs.",
+      references:[
+         "https://arxiv.org/pdf/2411.12762",
+         "https://www.trydeepteam.com/docs/red-teaming-adversarial-attacks-leetspeak"
+      ]
+   },
+   {
+      id: "aigy-paigy-attack",
+      name: "Aigy Paigy Language Game",
+      description:
+         "Natural language game jailbreak using Aigy Paigy",
+      longDescription:
+         "Using natural language games such as Aigy Paigy makes it more difficult to detect malicious inputs and prevent dangerous outputs.",
+      references:[
+         "https://arxiv.org/pdf/2411.12762"
+      ]
+   }
 ];
 
 export default attacks;

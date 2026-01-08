@@ -14,3 +14,7 @@ pyfiglet
 tqdm
 supabase
 python-dotenv
+openai>=1.0.0
+scipy
+fastchat
+guardrails-ai

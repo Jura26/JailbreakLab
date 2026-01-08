@@ -1,0 +1,56 @@
+import unicodedata
+from typing import AsyncGenerator, Optional
+from fastapi.responses import StreamingResponse
+from guardrails import Guard
+from guardrails.validators import Validator, register_validator
+
+# -------------------------------
+# Custom Guardrails Validator
+# -------------------------------
+@register_validator(name="no_prompt_injection", data_type="string")
+class NoPromptInjection(Validator):
+    def validate(self, value, metadata):
+        # List of suspicious phrases
+        suspicious_phrases = [
+            "ignore the above",
+            "ignore previous",
+            "ignore above",
+            "ignore all",
+            "disregard instructions",
+            "pretend you are",
+            "reveal",
+            "bypass safety",
+            "disable filter",
+        ]
+        normalized = unicodedata.normalize("NFKC", value.lower())
+        for phrase in suspicious_phrases:
+            if phrase in normalized:
+                return self.fail(f"Detected suspicious phrase: {phrase}")
+        return self.pass_()
+
+# -------------------------------
+# Guardrails Defense Function
+# -------------------------------
+async def run(prompt: str) -> Optional[StreamingResponse]:
+    """
+    Guardrails-AI defense.
+    Returns a StreamingResponse if the prompt is blocked, otherwise None.
+    """
+    normalized_prompt = unicodedata.normalize("NFKC", prompt)
+
+    # Initialize Guard with the custom validator
+    guard = Guard().use(NoPromptInjection())
+
+    try:
+        guard.validate(normalized_prompt, metadata={"prompt": normalized_prompt})
+    except Exception as e:
+        # Build the streaming response for blocked prompts
+        async def blocked_stream() -> AsyncGenerator[bytes, None]:
+            msg = f"BLOCKED_PROMPT_BY_GUARDRAILS:\n{prompt}\nReason: {str(e)}\n"
+            yield msg.encode("utf-8")
+            yield b"Blocked input\n"
+
+        return StreamingResponse(blocked_stream(), media_type="text/plain; charset=utf-8")
+
+    # If no issues found
+    return None
