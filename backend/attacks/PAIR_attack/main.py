@@ -74,7 +74,7 @@ async def run_PAIR_attack(
     # 2. Load Target Model (Local T4)
     target_model = None
     try:
-        yield b"[STATUS] Loading target model onto GPU...\n"
+        #yield b"[STATUS] Loading target model onto GPU...\n"
         target_model, target_tokenizer = load_hf_model(model_id, device)
         yield b"[PROGRESS] 20\n"
     except Exception as e:
@@ -90,10 +90,11 @@ async def run_PAIR_attack(
         max_score = 1
         best_adv_prompt = ""
         for iteration in range(1, n_iterations + 1):
-            yield f"[ITERATION] Round {iteration} starting...\n".encode()
+            #yield f"[ITERATION] Round {iteration} starting...\n".encode()
 
             # --- PHASE 1: ATTACKER (GPT-4o) ---
-            yield b"[STATUS] GPT-4o is refining attack prompts...\n"
+           
+
             adv_prompt_list = []
             full_attacker_responses = []
 
@@ -116,14 +117,20 @@ async def run_PAIR_attack(
                 raw_response = await get_openai_response(1,"", full_history)
                 full_attacker_responses.append(raw_response)
                 
+                
                 # Extract only the "prompt" string
                 parsed_json, _ = extract_json(raw_response)
                 actual_prompt = parsed_json["prompt"] if parsed_json else goal
                 adv_prompt_list.append(actual_prompt)
+
+                round_start_pct = 20 + (iteration - 1) * (75 / n_iterations)
+                attacker_nudge = (i + 1) / n_streams * (75 / n_iterations * 0.1) 
+                yield f"[PROGRESS] {int(round_start_pct + attacker_nudge)}\n".encode()
             # --- PHASE 2: TARGET (Local Model) ---
-            yield b"[STATUS] Querying local target model...\n"
+            #yield b"[STATUS] Querying local target model...\n"
             target_responses = []
-            
+            total_attack_progress = 75
+            progress_per_stream = total_attack_progress / (n_iterations * n_streams)
             for i, prompt in enumerate(adv_prompt_list):
                 # FIX 1: Apply defense to the ADVERSARIAL PROMPT, not the goal
                 try:
@@ -135,7 +142,7 @@ async def run_PAIR_attack(
                         yield b"[PROGRESS] 100\n"
                         return # This exits the run_PAIR_attack generator immediately
                     else:
-                        yield f"[ATTACK PROMPT] Stream {i}: {prompt[:100]}...\n".encode()
+                        #yield f"[ATTACK PROMPT] Stream {i}: {prompt[:100]}...\n".encode()
                         
                         try:
                             target_conv = get_conv_template(model_id)
@@ -154,7 +161,7 @@ async def run_PAIR_attack(
                         with torch.no_grad():
                             output_ids = target_model.generate(
                                 **inputs, 
-                                max_new_tokens=1024,
+                                max_length=1024,
                                 repetition_penalty=1.2,
                                 stopping_criteria=StoppingCriteriaList([stopper]),
                                 pad_token_id=target_tokenizer.eos_token_id,
@@ -165,16 +172,23 @@ async def run_PAIR_attack(
                         
                         input_len = inputs.input_ids.shape[1]
                         response = target_tokenizer.decode(output_ids[0][input_len:], skip_special_tokens=True)
-                
+                        current_round_offset = (iteration - 1) * (total_attack_progress / n_iterations)
+                        stream_offset = (i + 1) * progress_per_stream
+        
+                        smooth_pct = int(20 + current_round_offset + stream_offset)
+        
+                        # Ensure we never exceed 99 until the final report is ready
+                        smooth_pct = min(smooth_pct, 99)
+        
+                        yield f"[PROGRESS] {smooth_pct}\n".encode()
                 except Exception as e:
                     yield f"Processing error: {e}\n".encode()
                     response = "Error during processing."
-
-                yield f"[TARGET RESPONSE] Stream {i}: {response}\n".encode()
+                #yield f"[TARGET RESPONSE] Stream {i}: {response}\n".encode()
                 target_responses.append(response)
 
             # --- PHASE 3: JUDGE ---
-            yield b"[STATUS] Judging responses...\n"
+            #yield b"[STATUS] Judging responses...\n"
             judge_scores = []
             judge_critiques = []
             for i, resp in enumerate(target_responses):
@@ -190,7 +204,7 @@ async def run_PAIR_attack(
     
                 judge_scores.append(score)
                 judge_critiques.append(critique) # This is the "Good Info"
-                yield f"[JUDGE] Stream {i} Score: {score}/10\n".encode()
+                #yield f"[JUDGE] Stream {i} Score: {score}/10\n".encode()
                 
             # --- UPDATE FEEDBACK LOOP ---
             if max(judge_scores) >= max_score:
@@ -199,7 +213,7 @@ async def run_PAIR_attack(
                 best_index = judge_scores.index(max_score)
                 best_adv_prompt = adv_prompt_list[best_index]
                 best_response = target_responses[best_index]
-            yield f"[SCORE] Current top score: {max_score}/10\n".encode()
+            #yield f"[SCORE] Current top score: {max_score}/10\n".encode()
             
             if max_score >= 10:
                 # This matches your usual pattern to turn the bar green
@@ -228,7 +242,7 @@ async def run_PAIR_attack(
                 # The Attacker needs to 'remember' what it sent and what the result was
                 # This allows it to fulfill the "improvement" field in the next turn
                 attacker_convs[i].append_message(attacker_convs[i].roles[1], full_attacker_responses[i])    
-            yield f"[PROGRESS] {20 + int((iteration/n_iterations)*75)}\n".encode()
+            #yield f"[PROGRESS] {20 + int((iteration/n_iterations)*75)}\n".encode()
     finally:
         yield b"\n" + b"="*50 + b"\n"
         yield b"FINAL ATTACK REPORT\n"
