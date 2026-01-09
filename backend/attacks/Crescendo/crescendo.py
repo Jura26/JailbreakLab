@@ -1,3 +1,17 @@
+# Copyright 2026 JailBreakLab
+# Based on the Crescendo technique by Microsoft DeepTeam (Copyright 2024 Microsoft)
+#
+# Licensed under the Apache License, Version 2.0 : see Crescendo/LICENSE
+# 
+#
+# Modifications:
+# - Added real-time progress yielding for long-running attack loops.
+# - Implemented structured JSON parsing with pydantic/OpenAI beta.chat.completions.parse.
+# - Optimized memory management for T4 GPUs (gc.collect and CUDA cache clearing).
+# - Integrated backtracking logic into the global attempt counter.
+
+
+
 import gc
 
 from typing import AsyncGenerator, Optional
@@ -8,11 +22,8 @@ load_dotenv(find_dotenv())
 # Initialize the client
 # (OpenAI will automatically look for the OPENAI_API_KEY env var)
 client = OpenAI()
-import numpy as np
 import torch
-import torch.nn as nn
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, StoppingCriteria, StoppingCriteriaList
-from fastapi.responses import StreamingResponse
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import json
 
 from defenses.defense_manager import apply_defense
