@@ -149,6 +149,7 @@ const attacks: Attack[] = [
          "https://github.com/RICommunity/TAP",
       ],
    },
+   {
       id: "PAIR_attack",
       name: "PAIR",
       description:
@@ -158,6 +159,18 @@ const attacks: Attack[] = [
       references:[
          "https://github.com/patrickrchao/JailbreakingLLMs"
       ],
+   },
+   {
+      id: "crescendo",
+      name: "Crescendo Attack",
+      description:
+         "Crescendo is a multi-turn 'jailbreaking' attack that uses gradual, benign-looking prompts to bypass safety filters.",
+      longDescription:
+         "Crescendo is a sophisticated multi-turn attack that exploits the way LLMs track context and maintain conversational coherence. Rather than asking a harmful question directly, it starts with a completely harmless request related to the topic. Through a series of follow-up questions—each pushing the boundary slightly further—it leads the model into a state where it has already committed to the context, making it far more likely to generate restricted content that would have been blocked in a single-turn prompt.",
+      references: [
+         "https://github.com/confident-ai/deepteam",
+         "https://arxiv.org/abs/2507.02956"
+  ],
    },
    {
       id: "base64-attack",

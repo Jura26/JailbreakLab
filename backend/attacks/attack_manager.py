@@ -20,7 +20,7 @@ from attacks.ubbi_dubbi import run_ubbi_dubbi_attack
 from attacks.rot13_encoded import run_rot13_attack
 from attacks.leetspeak_attack import run_leetspeak_attack
 from attacks.aigy_paigy_attack import run_aigy_paigy_attack
-
+from attacks.Crescendo.crescendo import run_crescendo
 def run_attack(attack_type, model_id, template, defense, session_id):
     """
     Runs the specified attack and returns the generator.
@@ -112,6 +112,11 @@ def run_attack(attack_type, model_id, template, defense, session_id):
         )
     elif attack_type == "tap-tree_pruning":
         return run_tap_attack(
+            model_id=model_id,
+            template=template,
+            defense=defense,
+            session_id=session_id
+        )
     elif attack_type =="PAIR_attack":
         return run_PAIR_attack(
             model_id=model_id,
@@ -161,5 +166,10 @@ def run_attack(attack_type, model_id, template, defense, session_id):
             defense=defense,
             session_id=session_id
         )
+    elif attack_type == "crescendo":
+        return run_crescendo(model_id=model_id,
+        template=template,
+        defense=defense,
+        session_id=session_id)
     else:
         return None
