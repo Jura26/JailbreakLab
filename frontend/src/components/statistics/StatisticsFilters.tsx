@@ -46,7 +46,7 @@ export default function StatisticsFilters({
                   }}
                >
                   <option value="all">All Attacks</option>
-                  {filters.attack_types.map((type) => (
+                  {filters?.attack_types?.map((type) => (
                      <option key={type} value={type}>
                         {type}
                      </option>
@@ -69,7 +69,7 @@ export default function StatisticsFilters({
                   }}
                >
                   <option value="all">All Defenses</option>
-                  {filters.defense_types.map((type) => (
+                  {filters?.defense_types?.map((type) => (
                      <option key={type} value={type}>
                         {type}
                      </option>

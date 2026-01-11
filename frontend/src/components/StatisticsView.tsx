@@ -6,7 +6,7 @@ import StatisticsFilters from "./statistics/StatisticsFilters";
 import StatisticsCards from "./statistics/StatisticsCards";
 import StatisticsCharts from "./statistics/StatisticsCharts";
 
-const API_URL = import.meta.env.VITE_API_BASE_URL;
+const API_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
 interface StatRecord {
    id: string;
@@ -51,7 +51,10 @@ export default function StatisticsView() {
 
    useEffect(() => {
       fetch(`${API_URL}/api/statistics/filters`)
-         .then((res) => res.json())
+         .then((res) => {
+            if (!res.ok) throw new Error("Failed to fetch filters");
+            return res.json();
+         })
          .then((data) => setFilters(data))
          .catch((err) => console.error("Error fetching filters:", err));
    }, []);
@@ -213,8 +216,8 @@ export default function StatisticsView() {
    const bestDefense =
       defenseStats.length > 0
          ? defenseStats.reduce((a, b) =>
-              a.successRate < b.successRate ? a : b
-           )
+            a.successRate < b.successRate ? a : b
+         )
          : null;
 
    return (
