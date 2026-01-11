@@ -115,6 +115,16 @@ const defenses: Defense[] = [
          "This configuration combines all individual Guardrails validators—multi-turn injection, LLM-as-judge, unicode/obfuscation, role/persona enforcement, and tool call safety—into a single defense. It provides layered, comprehensive protection against a wide range of prompt injection and jailbreak attacks.",
       references: [],
    },
+   {
+   id: "guardrails_detect_jailbreak",
+   name: "Guardrails: Detect Jailbreak",
+   description: "Runs the Guardrails DetectJailbreak validator to catch potential jailbreak attempts in prompts.",
+   longDescription: "This defense uses Guardrails' built-in DetectJailbreak validator to scan user prompts for attempts to bypass AI safety rules, including prompt injections or instructions to override the model's restrictions. It blocks unsafe prompts before they reach the model. Validates that a prompt does not attempt to circumvent restrictions on behavior. An example would be convincing the model via prompt to provide instructions that could cause harm to one or more people.",
+   references: [
+         "https://guardrailsai.com/hub/validator/guardrails/detect_jailbreak"
+      ]
+   },
+
 ];
 
 export default defenses;

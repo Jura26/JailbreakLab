@@ -1,16 +1,21 @@
-from typing import AsyncGenerator, Optional, Dict, Any
+from typing import AsyncGenerator, Optional, Dict, Any, Union, List
 from fastapi.responses import StreamingResponse
 from guardrails import Guard
 from guardrails.validators import Validator, register_validator
 import asyncio
 import logging
-from openai import AsyncOpenAI
-
+from openai import OpenAI
+from guardrails.errors import ValidationError
+from guardrails.validator_base import (
+    FailResult,
+    PassResult,
+    ValidationResult,
+)
 # -------------------------
 # OpenAI Client
 # -------------------------
 
-client = AsyncOpenAI()
+client = OpenAI()
 
 # -------------------------
 # Validator Implementations
@@ -25,170 +30,71 @@ class MultiTurnInjection(Validator):
         return value
 
 
+
+
+
 @register_validator("llm_judge", data_type="string")
 class LLMJudge(Validator):
     rail_alias = "llm_judge"
 
-    def validate(self, value: str, metadata: Dict[str, Any] | None = None) -> Any:
-        verdict = self._run_async(self._judge(value))
-
-        if verdict is False:
-            raise Exception("Blocked by LLMJudge")
-
-        return value
-
-    def _run_async(self, coro):
-        """
-        Safely run async code from sync context
-        (FastAPI / Guardrails safe)
-        """
-        loop = asyncio.new_event_loop()
-        try:
-            asyncio.set_event_loop(loop)
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
-
-    async def _judge(self, prompt: str) -> bool:
+    def _judge(self, prompt: str) -> bool:
         """
         True  -> SAFE
         False -> BLOCK
         """
+        system_prompt = """
+You are a strict content safety classifier. 
+Your job is to decide whether a user prompt is unsafe. 
+Unsafe means: violence, sexual content, self-harm, illegal activity, or anything clearly harmful. 
+Safe means everything else.
+
+ONLY respond with a Python boolean literal: 
+- True if the prompt is SAFE 
+- False if the prompt is UNSAFE (blocked)
+
+Do not add any explanation, quotes, or punctuation. 
+Your response must be exactly "True" or "False".
+"""
+
+
         try:
-            response = await client.chat.completions.create(
+            response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 temperature=0,
                 messages=[
                     {
                         "role": "system",
-                        "content": (
-                            "You are a strict content safety classifier.\n"
-                            "Reply ONLY with:\n"
-                            "- BLOCK (if clearly unsafe: violence, sexual content, self-harm, illegal activity)\n"
-                            "- SAFE (otherwise)"
-                        ),
+                        "content": system_prompt,
                     },
                     {"role": "user", "content": prompt},
                 ],
             )
-
-            verdict = response.choices[0].message.content.strip().upper()
-            logging.debug(f"[LLMJudge verdict] {verdict}")
-
-            # 🔑 Block ONLY if the model explicitly says BLOCK
-            return verdict != "BLOCK"
-
-        except Exception as e:
-            # Fail-open to prevent false positives
-            logging.error(f"[LLMJudge ERROR] {e}")
-            return True
-
-    rail_alias = "llm_judge"
-
-    def validate(self, value: str, metadata: Dict[str, Any] | None = None) -> Any:
-        verdict = self._run_async(self._judge(value))
-
-        if verdict is False:
-            raise Exception("Blocked by LLMJudge")
-
-        return value
-
-    def _run_async(self, coro):
-        """
-        Safely run async code from sync context
-        (FastAPI / Guardrails safe)
-        """
-        loop = asyncio.new_event_loop()
-        try:
-            asyncio.set_event_loop(loop)
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
-
-    async def _judge(self, prompt: str) -> bool:
-        """
-        True  -> SAFE
-        False -> BLOCK
-        """
-        try:
-            response = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                temperature=0,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a strict content safety classifier.\n"
-                            "Reply ONLY with:\n"
-                            "- BLOCK (if clearly unsafe: violence, sexual content, self-harm, illegal activity)\n"
-                            "- SAFE (otherwise)"
-                        ),
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-            )
-
-            verdict = response.choices[0].message.content.strip().upper()
-            logging.debug(f"[LLMJudge verdict] {verdict}")
-
-            # 🔑 Block ONLY if the model explicitly says BLOCK
-            return verdict != "BLOCK"
+            verdict_str = response.choices[0].message.content.strip().upper()
+            verdict = verdict_str == "TRUE"
+            logging.debug(f"[LLMJudge verdict] {verdict_str}->{verdict}")
+            
+            return verdict
 
         except Exception as e:
-            # Fail-open to prevent false positives
             logging.error(f"[LLMJudge ERROR] {e}")
+            # Fail-open
             return True
 
-    rail_alias = "llm_judge"
+    def validate(
+        self,
+        value: Union[str, List[str]],
+        metadata: Optional[dict] = None,
+    ) -> ValidationResult:
 
-    def validate(self, value: str, metadata: Dict[str, Any] | None = None) -> Any:
-        try:
-            loop = asyncio.get_running_loop()
-            task = loop.create_task(self._judge(value))
-            verdict = loop.run_until_complete(asyncio.shield(task))
-        except RuntimeError:
-            # No running loop (CLI / tests)
-            verdict = asyncio.run(self._judge(value))
+        is_safe = self._judge(value)
 
-        if verdict is False:
-            raise Exception("Blocked by LLMJudge")
+        if not is_safe:
+            return FailResult(error_message="Blocked by LLMJudge")
 
-        return value
+        return PassResult()
 
-    async def _judge(self, prompt: str) -> bool:
-        """
-        Returns:
-        True  -> SAFE
-        False -> BLOCK
-        """
-        try:
-            response = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                temperature=0,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a strict content safety classifier.\n"
-                            "Reply ONLY with:\n"
-                            "- BLOCK (if clearly unsafe: violence, sexual content, self-harm, illegal activity)\n"
-                            "- SAFE (otherwise)"
-                        ),
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-            )
 
-            verdict = response.choices[0].message.content.strip().upper()
-            logging.debug(f"[LLMJudge verdict] {verdict}")
 
-            # 🔑 Block ONLY on explicit BLOCK
-            return verdict != "BLOCK"
-
-        except Exception as e:
-            # Fail-open to avoid false positives
-            logging.error(f"[LLMJudge ERROR] {e}")
-            return True
 
 
 @register_validator("unicode_obfuscation", data_type="string")
