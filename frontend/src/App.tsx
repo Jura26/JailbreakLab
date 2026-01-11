@@ -17,6 +17,8 @@ import PromptInput from "./components/PromptInput";
 import InfoModal from "./components/InfoModal";
 import StatisticsView from "./components/StatisticsView";
 
+const API_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+
 function App() {
    const [selectedAttack, setSelectedAttack] = useState<Attack>(attacks[0]);
    const [selectedDefense, setSelectedDefense] = useState<Defense>(defenses[0]);
@@ -82,7 +84,7 @@ function App() {
 
       try {
          const response = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/api/prompt/stream`,
+            `${API_URL}/api/prompt/stream`,
             {
                method: "POST",
                headers: { "Content-Type": "application/json" },
@@ -261,22 +263,20 @@ function App() {
                <div className="absolute right-0 top-0 flex gap-1">
                   <button
                      onClick={() => setActiveView("tester")}
-                     className={`p-2.5 rounded-lg border transition-all duration-200 ${
-                        activeView === "tester"
+                     className={`p-2.5 rounded-lg border transition-all duration-200 ${activeView === "tester"
                            ? "bg-[#6366f1]/20 border-[#6366f1] text-[#6366f1]"
                            : "bg-[#1a1a24]/80 border-[#2d2d3d] text-[#94a3b8] hover:border-[#6366f1]/50 hover:text-[#6366f1]"
-                     }`}
+                        }`}
                      title="Tester"
                   >
                      <FlaskConical className="w-5 h-5" />
                   </button>
                   <button
                      onClick={() => setActiveView("statistics")}
-                     className={`p-2.5 rounded-lg border transition-all duration-200 ${
-                        activeView === "statistics"
+                     className={`p-2.5 rounded-lg border transition-all duration-200 ${activeView === "statistics"
                            ? "bg-[#6366f1]/20 border-[#6366f1] text-[#6366f1]"
                            : "bg-[#1a1a24]/80 border-[#2d2d3d] text-[#94a3b8] hover:border-[#6366f1]/50 hover:text-[#6366f1]"
-                     }`}
+                        }`}
                      title="Statistics"
                   >
                      <BarChart3 className="w-5 h-5" />
