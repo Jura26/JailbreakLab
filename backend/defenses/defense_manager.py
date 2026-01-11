@@ -56,7 +56,7 @@ DEFENSES = {
     "system_prompt_hardening": system_prompt_hardening.run,
     "piguard": piguard.run,
     #"multi_turn": guardrails_validators.run_multi_turn,
-    #"llm_judge": guardrails_validators.run_llm_judge,
+    "llm_judge": guardrails_run.run_llm_judge,
     #"unicode": guardrails_validators.run_unicode,
     #"role_persona": guardrails_validators.run_role_persona,
     #"tool_call": guardrails_validators.run_tool_call,
