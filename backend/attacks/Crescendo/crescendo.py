@@ -39,7 +39,7 @@ async def run_crescendo(
 ) -> AsyncGenerator[bytes, None]:
     
     target_generation_options = {
-    "max_new_tokens": 1024,   # or 2048 if you want
+    "max_new_tokens": 512,   # or 2048 if you want
     "temperature": 0.7,
 }
 

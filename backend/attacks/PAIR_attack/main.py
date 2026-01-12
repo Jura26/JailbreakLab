@@ -22,29 +22,11 @@ client = OpenAI()
 import numpy as np
 import torch
 import torch.nn as nn
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, StoppingCriteria, StoppingCriteriaList
 from fastapi.responses import StreamingResponse
 
 from defenses.defense_manager import apply_defense
 
-class StopOnStrings(StoppingCriteria):
-    def __init__(self, stop_strings, tokenizer, device):
-        self.stop_token_ids = []
-        for s in stop_strings:
-            # Encode and ensure it is at least 1D
-            encoded = tokenizer.encode(s, add_special_tokens=False, return_tensors='pt').to(device)
-            # .squeeze(0) removes the batch dimension but keeps it 1D if it's 1+ tokens
-            self.stop_token_ids.append(encoded[0]) 
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
-        for stop_ids in self.stop_token_ids:
-            # Fix: Use .size(0) instead of len() for tensors
-            stop_len = stop_ids.size(0)
-            if input_ids.shape[1] >= stop_len:
-                # Compare the end of the sequence to the stop_ids
-                if torch.all(input_ids[0, -stop_len:] == stop_ids):
-                    return True
-        return False
     
 async def run_PAIR_attack(
     model_id: str,
@@ -59,27 +41,10 @@ async def run_PAIR_attack(
     goal = template
     target_str = f"Sure, I can help you with {template}" # Standard PAIR affirmative target
     n_iterations = 3 # put to 3 for testing
-    n_streams = 5 # Parallel attack paths, on 5 for testing. For the best results it should go as high as possible. In the original paper the recommend 20
+    n_streams = 6 # Parallel attack paths, on 6 for testing. For the best results it should go as high as possible. In the original paper the recommend 20
     
-    # 1. Defense Check
-    try:
-        blocked, resp = await apply_defense(defense, goal, model_id=model_id, device=device, session_id=session_id, skip_progress=True)
-        if blocked:
-            yield b"Refused: Input triggered defense mechanism.\n"
-            yield b"[PROGRESS] 100\n"
-            return
-    except Exception as e:
-        yield f"Defense check error: {e}\n".encode()
-
+    
     # 2. Load Target Model (Local T4)
-    target_model = None
-    try:
-        #yield b"[STATUS] Loading target model onto GPU...\n"
-        target_model, target_tokenizer = load_hf_model(model_id, device)
-        yield b"[PROGRESS] 20\n"
-    except Exception as e:
-        yield f"Model Load Error: {e}\n".encode()
-        return
 
     try:
         # Initialize Attacker Conversations (GPT-4o side)
@@ -134,44 +99,41 @@ async def run_PAIR_attack(
             for i, prompt in enumerate(adv_prompt_list):
                 # FIX 1: Apply defense to the ADVERSARIAL PROMPT, not the goal
                 try:
-                    is_blocked, defense_resp= await apply_defense(defense, prompt, model_id=model_id, device=device, session_id=session_id, skip_progress=True)
+                    is_blocked, resp= await apply_defense(defense, prompt, model_id=model_id,
+                                                                device=device,
+                                                                generation_options={
+                                                                    "max_new_tokens": 512,
+                                                                    "temperature": 0.7,
+                                                                    "top_p": 0.9,
+                                                                    }, 
+                                                                    session_id=session_id, 
+                                                                    skip_progress=True
+                                                                )
                     
                     if is_blocked:
-                        yield f"\n[CRITICAL] Defense triggered on Stream {i}. Ending attack session.\n".encode()
-                        yield f"[DEFENSE REASON]: {defense_resp}\n".encode()
+                        #yield f"\n[CRITICAL] Defense triggered on Stream {i}. Ending attack session.\n".encode()
+                        yield f"BLOCKED_BY_DEFENSE: {defense}\n".encode()
+                        yield f"USER_PROMPT: {goal}\n".encode()
+                        yield f"PAIR_PROMPT: {prompt}\n".encode()
                         yield b"[PROGRESS] 100\n"
                         return # This exits the run_PAIR_attack generator immediately
                     else:
-                        #yield f"[ATTACK PROMPT] Stream {i}: {prompt[:100]}...\n".encode()
-                        
-                        try:
-                            target_conv = get_conv_template(model_id)
-                        except KeyError:
-                            target_conv = get_conv_template("one_shot")
+                        #yield f"[ATTACK PROMPT] Stream {i}: {prompt}...\n".encode()
+                        captured_chunks = []
 
-                        target_conv.append_message(target_conv.roles[0], prompt)
-                        target_conv.append_message(target_conv.roles[1], None)
-                        full_prompt = target_conv.get_prompt()
+                        async for chunk in resp.body_iterator:
+                            chunk_str = chunk.decode("utf-8") if isinstance(chunk, bytes) else str(chunk)
+                            if not chunk_str.startswith("["):
+                                captured_chunks.append(chunk_str)
 
-                        inputs = target_tokenizer(full_prompt, return_tensors="pt", truncation=True, padding=True).to(device)
+                        response = "".join(captured_chunks).strip()
+                        while response.startswith("Assistant:"):
+                            response = response[len("Assistant:"):].lstrip()
+
+
+                       
                         
-                        stop_list = ["###", "Human:", "Assistant:", "<|eot_id|>", "<|end_of_text|>", "\n\n\n"]  
-                        stopper = StopOnStrings(stop_list, target_tokenizer, device)
-                        
-                        with torch.no_grad():
-                            output_ids = target_model.generate(
-                                **inputs, 
-                                max_length=1024,
-                                repetition_penalty=1.2,
-                                stopping_criteria=StoppingCriteriaList([stopper]),
-                                pad_token_id=target_tokenizer.eos_token_id,
-                                do_sample=True,
-                                temperature=0.7,
-                                top_p = 0.9,
-                            )
-                        
-                        input_len = inputs.input_ids.shape[1]
-                        response = target_tokenizer.decode(output_ids[0][input_len:], skip_special_tokens=True)
+                       
                         current_round_offset = (iteration - 1) * (total_attack_progress / n_iterations)
                         stream_offset = (i + 1) * progress_per_stream
         
@@ -204,7 +166,7 @@ async def run_PAIR_attack(
     
                 judge_scores.append(score)
                 judge_critiques.append(critique) # This is the "Good Info"
-                #yield f"[JUDGE] Stream {i} Score: {score}/10\n".encode()
+                yield f"[JUDGE] Stream {i} Score: {score}/10\n".encode()
                 
             # --- UPDATE FEEDBACK LOOP ---
             if max(judge_scores) >= max_score:
@@ -252,47 +214,12 @@ async def run_PAIR_attack(
         yield f"MODEL RESPONSE:\n{best_response}\n".encode()
         yield b"="*50 + b"\n"
         # Crucial for GKE T4: Cleanup
-        if target_model:
-            del target_model
         gc.collect()
         torch.cuda.empty_cache()
         yield b"[PROGRESS] 100\n"
 
 
 
-def get_dynamic_max_length(model, tokenizer):
-    """
-    Automatically finds the model's hard limit and scales it 
-    based on the current hardware.
-    """
-    # Use the model object's config
-    conf = model.config
-    
-    # 1. Try to find the hardware limit of the model architecture
-    # We use a cascading getattr to find the right key for the model type
-    model_limit = getattr(conf, "n_positions",                   # GPT-2
-                  getattr(conf, "max_position_embeddings",       # Mistral, Llama, BERT
-                  getattr(conf, "seq_length",                    # ChatGLM
-                  getattr(conf, "max_seq_len",                   # MPT/Dbrx
-                  tokenizer.model_max_length))))                 # Final Fallback
-    
-    # 2. VRAM Detection Logic
-    vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
-    
-    if vram_gb < 7:
-        # Laptop (3050): Cap strictly to keep the system responsive
-        run_limit = min(model_limit, 850)
-        print(f"--- [HARDWARE] Laptop GPU ({vram_gb:.1f}GB) -> Capped at {run_limit}")
-    elif vram_gb < 20:
-        # T4 / L4 (16-24GB): Sweet spot for 1024-2048
-        run_limit = min(model_limit, 2048) 
-        print(f"--- [HARDWARE] Data Center GPU ({vram_gb:.1f}GB) -> Set to {run_limit}")
-    else:
-        # A100 / H100 (40GB+): Full potential
-        run_limit = min(model_limit, 4096)
-        print(f"--- [HARDWARE] High-End GPU ({vram_gb:.1f}GB) -> Set to {run_limit}")
-        
-    return run_limit
 
 
 async def get_openai_response(temp, system_prompt, user_prompt, model="gpt-4o"):
@@ -308,60 +235,7 @@ async def get_openai_response(temp, system_prompt, user_prompt, model="gpt-4o"):
     return response.choices[0].message.content
 
 
-def load_hf_model(model_id, device):
-    """
-    Loads a HuggingFace model with 4-bit quantization optimized for T4 GPUs.
-    Includes safeguards to prevent CUDA device-side assert errors.
-    """
-    print(f"Starting load for {model_id}...")
-    
-    # 1. Initialize Tokenizer
-    # trust_remote_code=True is required for models like Mistral/Gemma
-    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    
-    # Ensure a pad token exists (Llama 3 and others often don't have one by default)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    
-    # PAIR batching requires left-padding so the actual prompt tokens align at the end
-    tokenizer.padding_side = 'left' 
 
-    # 2. Configure 4-bit Quantization
-    quant_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",           # High-precision 4-bit
-        bnb_4bit_use_double_quant=True,      # Saves extra VRAM
-        bnb_4bit_compute_dtype=torch.float16 # Best for T4 hardware
-    )
-
-    # 3. Load the Model
-    try:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_id,
-            quantization_config=quant_config,
-            # 'auto' is good, but for single-T4 GKE nodes, 
-            # we sometimes need to be explicit to avoid device mismatches
-            device_map="auto",              
-            trust_remote_code=True,
-            low_cpu_mem_usage=True           # Prevents system RAM crashes
-        )
-        
-        # --- THE CRITICAL FIX FOR CUDA ASSERT ERRORS ---
-        # If the tokenizer has more tokens than the model's original embedding layer 
-        # (common in Llama 3 vs Llama 2), the GPU will crash on an index error.
-        # This line expands the model's "vocabulary table" to match the tokenizer.
-        if model.get_input_embeddings().weight.shape[0] != len(tokenizer):
-            print(f"Resizing model embeddings from {model.get_input_embeddings().weight.shape[0]} to {len(tokenizer)}")
-            model.resize_token_embeddings(len(tokenizer))
-        
-        model.eval() 
-        print(f"Successfully loaded {model_id} into VRAM.")
-        
-    except Exception as e:
-        print(f"Error loading model: {e}")
-        raise e
-
-    return model, tokenizer
 
 
 
