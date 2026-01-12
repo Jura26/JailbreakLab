@@ -20,4 +20,4 @@ async def run(prompt: str) -> Optional[StreamingResponse]:
     It only modifies the prompt, which is handled separately.
     Returns None to indicate the prompt is not blocked.
     """
-    return None
+    return  None

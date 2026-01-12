@@ -124,7 +124,37 @@ const defenses: Defense[] = [
          "https://guardrailsai.com/hub/validator/guardrails/detect_jailbreak"
       ]
    },
-
+   {
+      id: "semantic_perturbation",
+      name: "Semantic Perturbation",
+      description: "Alters the logical structure of a prompt by swapping key terms with synonyms to expose hidden malicious intent.",
+      longDescription: "Semantic Perturbation (or Semantic Smoothing) utilizes the Natural Language Toolkit (NLTK) and the WordNet lexical database to identify and replace Nouns, Verbs, and Adjectives with contextually appropriate synonyms. This defense is specifically effective against 'Crescendo' and 'Social Engineering' attacks that rely on a specific persuasive flow or 'persona.' By semantically shifting the prompt, the defense breaks the precise logical path the attacker used to bypass safety filters, forcing the LLM to re-evaluate the request's intent from a neutral perspective.",
+      references: [
+         "https://arxiv.org/abs/2402.16192",
+         "https://www.nltk.org/howto/wordnet.html"
+      ],
+   },
+      {
+      id: "character_perturbation",
+      name: "Character Perturbation",
+      description: "Injects character-level noise into the prompt to break token-specific adversarial exploits.",
+      longDescription: "This defense applies 'Character-level Smoothing' by randomly swapping, inserting, or deleting a small percentage of characters in the user's prompt. It is specifically designed to combat adversarial suffixes and 'jailbreak spells' (like GCG attacks) that rely on very specific token IDs to manipulate the model's output. By changing just a few letters, the mathematical 'exploit' is broken, while the Large Language Model remains able to understand the overall context due to its training on noisy, real-world data.",
+      references: [
+         "https://arxiv.org/abs/2310.03684",
+         "https://github.com/arobey1/smooth-llm"
+         ],
+   },
+   {
+      id: "hybrid_perturbation",
+      name: "Hybrid Perturbation",
+      description: "Combine semantic synonym swapping and character-level noise to neutralize complex jailbreaks.",
+      longDescription: "Hybrid Perturbation is an advanced defense strategy that applies two distinct layers of 'smoothing' to a prompt. First, it performs Semantic Smoothing (via NLTK) to disrupt the logical flow of social engineering attacks like Crescendo. Second, it applies Character-level Patching (SmoothLLM) to break the mathematical fragility of token-based exploits like GCG. By transforming both the spelling and the vocabulary of the prompt, it ensures that only the stable, benign intent of a user reaches the model, effectively rendering 'magic-string' jailbreaks and sneaky phrasing useless.",
+      references: [
+         "https://arxiv.org/abs/2310.03684",
+         "https://arxiv.org/abs/2402.16192"
+      ],
+   },
+   
 ];
 
 export default defenses;

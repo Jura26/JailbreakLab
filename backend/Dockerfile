@@ -25,7 +25,14 @@ RUN guardrails hub install hub://guardrails/detect_jailbreak
 
 
 # Download only the stopwords corpus at build time
-RUN python -m nltk.downloader -d /usr/share/nltk_data stopwords
+RUN python -m nltk.downloader -d /usr/share/nltk_data \
+    stopwords \
+    wordnet \
+    punkt \
+    punkt_tab \
+    averaged_perceptron_tagger \
+    averaged_perceptron_tagger_eng \
+    omw-1.4
 
 # Make sure nltk can find the corpus
 ENV NLTK_DATA=/usr/share/nltk_data
