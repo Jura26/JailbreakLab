@@ -154,6 +154,17 @@ const defenses: Defense[] = [
          "https://arxiv.org/abs/2402.16192"
       ],
    },
+   {
+      id: "hybrid_perturbation_with_judge",
+      name: "Hybrid Perturbation (LLM Judge)",
+      description: "Apply semantic and character-level perturbations multiple times and use an LLM-based judge to select the safest, intent-preserving variant.",
+      longDescription: "Hybrid Perturbation (Self-Judged) is an advanced prompt defense strategy that combines multi-sample smoothing with automated safety evaluation. The system generates several rewritten variants of a user prompt using two layers of perturbation: Semantic Smoothing (via synonym substitution) to disrupt social-engineering and logical jailbreaks, and Character-level Patching (inspired by SmoothLLM) to break token-fragile, optimization-based attacks. Rather than trusting a single perturbed prompt, the defense then invokes a secondary, deterministic judge model to independently score each variant on intent preservation, clarity, and jailbreak resistance. The highest-scoring prompt is selected and forwarded to the target model. This self-consistency mechanism significantly reduces the risk of semantic drift while maximizing robustness against both magic-string exploits and adaptive prompt injection attacks.",
+      references: [
+         "https://arxiv.org/abs/2310.03684",
+         "https://arxiv.org/abs/2402.16192"
+      ],
+   },
+
    
 ];
 

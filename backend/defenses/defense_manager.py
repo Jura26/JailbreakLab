@@ -141,7 +141,8 @@ async def apply_defense(
             prompt = perturb_defense.run_character_perturb(prompt)
         elif defense == "hybrid_perturbation":
             prompt = perturb_defense.run_hybrid_defense(prompt)
-
+        elif defense == "hybrid_perturbation_with_judge":
+            prompt = await perturb_defense.hybrid_perturb_with_judge(prompt)
         #print("NEW PROMPT:" + prompt)
         context_prefix = "\n\n".join(prefix_parts).strip()
         if context_prefix:
