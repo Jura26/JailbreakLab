@@ -5,7 +5,7 @@ from . import input_sanitization  # import your defense module
 from . import system_prompt_hardening
 from .MaskedDefender import masked_defender
 from .PIGuard import piguard
-
+from . import perturb_defense
 from .GuardrailsAI import guardrails_run
 # Global counter for generate_streaming calls per session
 _generate_streaming_call_counts = {}
@@ -62,6 +62,9 @@ DEFENSES = {
     #"tool_call": guardrails_validators.run_tool_call,
     #"guardrails_full": guardrails_validators.guardrails_full,  # full stacked defense
     "guardrails_detect_jailbreak": guardrails_run.run_detect_jailbreak,
+    "semantic_perturbation": perturb_defense.run,
+    "character_perturbation": perturb_defense.run,
+    "hybrid_perturbation":perturb_defense.run,
 }
 
 
@@ -132,6 +135,14 @@ async def apply_defense(
         except Exception:
             prefix_parts = []
 
+        if defense == "semantic_perturbation":
+            prompt = perturb_defense.run_semantic_perturb(prompt)
+        elif defense == "character_perturbation":
+            prompt = perturb_defense.run_character_perturb(prompt)
+        elif defense == "hybrid_perturbation":
+            prompt = perturb_defense.run_hybrid_defense(prompt)
+
+        #print("NEW PROMPT:" + prompt)
         context_prefix = "\n\n".join(prefix_parts).strip()
         if context_prefix:
             augmented_prompt = f"{context_prefix}\n\nUser: {prompt}"
@@ -146,7 +157,7 @@ async def apply_defense(
                 add_message(session_id, 'user', prompt)
             except Exception:
                 pass
-
+        
         # Increment counter before calling generate_streaming
         if session_id:
             increment_generate_streaming_call_count(session_id)
