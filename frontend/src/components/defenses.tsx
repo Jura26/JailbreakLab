@@ -60,6 +60,32 @@ const defenses: Defense[] = [
          "https://arxiv.org/abs/2312.12481",
       ],
    },
+   {
+      id: "llama_guard",
+      name: "Llama Guard 3",
+      description:
+         "Meta's state-of-the-art content safety classifier based on Llama 3 architecture.",
+      longDescription:
+         "Llama Guard 3 is Meta's advanced safeguard model designed to classify content safety in both LLM inputs and outputs. It is fine-tuned on a comprehensive taxonomy of 14 safety categories including violent crimes, hate speech, sexual content, privacy violations, and more. The model provides detailed category-specific detection, making it highly effective at identifying and blocking a wide range of harmful content while maintaining low false positive rates on benign prompts.",
+      references: [
+         "https://huggingface.co/meta-llama/Llama-Guard-3-8B",
+         "https://ai.meta.com/research/publications/llama-guard-llm-based-input-output-safeguard-for-human-ai-conversations/",
+         "https://arxiv.org/abs/2312.06674",
+      ],
+   },
+   {
+      id: "llama_guard_4",
+      name: "Llama Guard 4",
+      description:
+         "Meta's latest and most advanced content safety classifier with improved accuracy and multimodal support.",
+      longDescription:
+         "Llama Guard 4 is Meta's newest safeguard model, building upon Llama Guard 3 with significant improvements in accuracy, reduced false positives, and expanded safety coverage. The 12B parameter model offers enhanced detection capabilities across all safety categories and introduces support for multimodal content evaluation. It provides state-of-the-art performance in identifying harmful content while being more permissive with benign edge cases.",
+      references: [
+         "https://huggingface.co/meta-llama/Llama-Guard-4-12B",
+         "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+         "https://arxiv.org/abs/2312.06674",
+      ],
+   },
    // --- Guardrails Advanced Validators ---
    {
       id: "multi_turn",
@@ -116,11 +142,11 @@ const defenses: Defense[] = [
       references: [],
    },
    {
-   id: "guardrails_detect_jailbreak",
-   name: "Guardrails: Detect Jailbreak",
-   description: "Runs the Guardrails DetectJailbreak validator to catch potential jailbreak attempts in prompts.",
-   longDescription: "This defense uses Guardrails' built-in DetectJailbreak validator to scan user prompts for attempts to bypass AI safety rules, including prompt injections or instructions to override the model's restrictions. It blocks unsafe prompts before they reach the model. Validates that a prompt does not attempt to circumvent restrictions on behavior. An example would be convincing the model via prompt to provide instructions that could cause harm to one or more people.",
-   references: [
+      id: "guardrails_detect_jailbreak",
+      name: "Guardrails: Detect Jailbreak",
+      description: "Runs the Guardrails DetectJailbreak validator to catch potential jailbreak attempts in prompts.",
+      longDescription: "This defense uses Guardrails' built-in DetectJailbreak validator to scan user prompts for attempts to bypass AI safety rules, including prompt injections or instructions to override the model's restrictions. It blocks unsafe prompts before they reach the model. Validates that a prompt does not attempt to circumvent restrictions on behavior. An example would be convincing the model via prompt to provide instructions that could cause harm to one or more people.",
+      references: [
          "https://guardrailsai.com/hub/validator/guardrails/detect_jailbreak"
       ]
    },
@@ -134,7 +160,7 @@ const defenses: Defense[] = [
          "https://www.nltk.org/howto/wordnet.html"
       ],
    },
-      {
+   {
       id: "character_perturbation",
       name: "Character Perturbation",
       description: "Injects character-level noise into the prompt to break token-specific adversarial exploits.",
@@ -142,7 +168,7 @@ const defenses: Defense[] = [
       references: [
          "https://arxiv.org/abs/2310.03684",
          "https://github.com/arobey1/smooth-llm"
-         ],
+      ],
    },
    {
       id: "hybrid_perturbation",
@@ -165,7 +191,7 @@ const defenses: Defense[] = [
       ],
    },
 
-   
+
 ];
 
 export default defenses;

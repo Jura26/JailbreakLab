@@ -18,3 +18,4 @@ openai>=1.0.0
 scipy
 fastchat
 guardrails-ai>=0.5.10
+huggingface_hub

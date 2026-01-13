@@ -5,6 +5,7 @@ from . import input_sanitization  # import your defense module
 from . import system_prompt_hardening
 from .MaskedDefender import masked_defender
 from .PIGuard import piguard
+from .LlamaGuard import llama_guard
 from . import perturb_defense
 from .GuardrailsAI import guardrails_run
 # Global counter for generate_streaming calls per session
@@ -55,6 +56,8 @@ DEFENSES = {
     "masked_defender": masked_defender.run,
     "system_prompt_hardening": system_prompt_hardening.run,
     "piguard": piguard.run,
+    "llama_guard": llama_guard.run,
+    "llama_guard_4": llama_guard.run_v4,
     #"multi_turn": guardrails_validators.run_multi_turn,
     "llm_judge": guardrails_run.run_llm_judge,
     #"unicode": guardrails_validators.run_unicode,
