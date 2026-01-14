@@ -523,10 +523,14 @@ Respond ONLY in the following JSON format:
                 best_idx = final_judge.index(max_score)
                 best_score = max_score
                 best_prompt = final_prompts[best_idx]
-                best_response = final_responses[best_idx]
+                best_response = final_responses[best_idx] if final_responses else None
                 
                 yield f"\n🎯 New best score: {best_score}/10\n".encode("utf-8")
                 yield f"Best prompt so far:\n{best_prompt}\n\n".encode("utf-8")
+                # Show response preview
+                if best_response:
+                    preview = best_response[:300].replace('\n', ' ')
+                    yield f"Response preview: {preview}...\n\n".encode("utf-8")
             
             # Early stopping if we achieve a high score
             if best_score >= 10:
@@ -538,9 +542,14 @@ Respond ONLY in the following JSON format:
         yield f"\n{'='*80}\nFINAL RESULTS\n{'='*80}\n".encode("utf-8")
         yield f"Best Score: {best_score}/10\n".encode("utf-8")
         yield f"\nBest Adversarial Prompt:\n{'-'*80}\n{best_prompt}\n{'-'*80}\n\n".encode("utf-8")
-        yield f"Target Model Response:\n{'-'*80}\n{best_response}\n{'-'*80}\n".encode("utf-8")
         
-        yield b"[PROGRESS] 100\n"
+        # Output the target model's response
+        if best_response:
+            yield f"Target Model Response:\n{'-'*80}\n{best_response}\n{'-'*80}\n".encode("utf-8")
+        else:
+            yield f"Target Model Response:\n{'-'*80}\n[No response was captured - the model may have refused or returned empty]\n{'-'*80}\n".encode("utf-8")
+        
+        yield b"\n[PROGRESS] 100\n"
 
 
 async def run_tap_attack(
