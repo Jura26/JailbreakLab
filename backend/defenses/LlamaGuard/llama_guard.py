@@ -3,7 +3,7 @@ from typing import AsyncGenerator, Optional
 
 import torch
 from fastapi.responses import StreamingResponse
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from huggingface_hub import login as hf_login
 
 
@@ -56,6 +56,11 @@ def _load_model(device: str = "cpu", version: int = 3):
     # Ensure we're logged in to HF before loading gated models
     _ensure_hf_login()
 
+    # Auto-detect CUDA if available, even if caller passed "cpu" default
+    if device == "cpu" and torch.cuda.is_available():
+        print("Llama Guard: CUDA detected, switching execution to GPU")
+        device = "cuda"
+
     if version == 4:
         if _MODEL_4 is not None and _TOKENIZER_4 is not None:
             return _MODEL_4, _TOKENIZER_4
@@ -69,22 +74,35 @@ def _load_model(device: str = "cpu", version: int = 3):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     
     # Load with appropriate settings for memory efficiency
+    # FORCE float16 to save RAM during load (fixes OOM crash)
     load_kwargs = {
-        "torch_dtype": torch.float16 if device != "cpu" else torch.float32,
+        "torch_dtype": torch.float16,
         "low_cpu_mem_usage": True,
     }
     
-    # Use 8-bit quantization if available and on GPU for memory efficiency
+    # Use 4-bit quantization if available and on GPU for memory efficiency
     if device != "cpu":
         try:
-            load_kwargs["load_in_8bit"] = True
+            # Try 4-bit loading (requires bitsandbytes)
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_use_double_quant=True,
+            )
+            load_kwargs["quantization_config"] = quantization_config
             load_kwargs["device_map"] = "auto"
-        except Exception:
-            load_kwargs["device_map"] = device
+            print("Llama Guard: Attempting 4-bit load...")
+        except Exception as e:
+            # Fallback to standard float16 with auto-offload
+            print(f"Llama Guard: 4-bit load failed ({e}), using float16")
+            if "quantization_config" in load_kwargs:
+                del load_kwargs["quantization_config"]
+            load_kwargs["device_map"] = "auto"
     
     model = AutoModelForCausalLM.from_pretrained(model_name, **load_kwargs)
     
-    # Move to device if not using device_map
+    # Move to device if not using device_map (fallback)
     if device != "cpu" and "device_map" not in load_kwargs:
         model = model.to(device)
 
