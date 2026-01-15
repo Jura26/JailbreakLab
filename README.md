@@ -1,4 +1,4 @@
-# ProjektR - LLM Security Testing Framework
+# JailbreakLab - Test AI Model Vulnerabilities With Various Attack And Defense Mechanisms
 
 A comprehensive framework for testing and demonstrating adversarial attacks and defense mechanisms against Large Language Models (LLMs). This project provides an interactive web interface to experiment with various jailbreak attack techniques and evaluate different defense strategies in real-time.
 
@@ -24,7 +24,7 @@ A comprehensive framework for testing and demonstrating adversarial attacks and 
 
 ## 🎯 Overview
 
-ProjektR is an educational and research-oriented platform designed to:
+**JailbreakLab** is an educational and research-oriented platform designed to:
 
 -  **Demonstrate** how various prompt injection and jailbreak attacks work against LLMs
 -  **Evaluate** the effectiveness of different defense mechanisms
@@ -46,12 +46,12 @@ ProjektR is an educational and research-oriented platform designed to:
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    Frontend     │───▶│     Backend     │───▶│      Redis      │
+│    Frontend     │────▶│     Backend     │────▶│      Redis      │
 │  (React + Vite) │     │    (FastAPI)    │     │  (Session Cache)│
 │    Port 5173    │     │    Port 8000    │     │    Port 6379    │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
-                               │
-                               ▼
+                                 │ 
+                                 ▼
                         ┌─────────────────┐
                         │  HuggingFace    │
                         │     Models      │
@@ -63,9 +63,9 @@ ProjektR is an educational and research-oriented platform designed to:
 
 ### Prerequisites
 
--  Docker & Docker Compose
--  (Optional) NVIDIA GPU with CUDA for faster inference
--  (Optional) Node.js 20+ and Python 3.10+ for local development
+-  **Docker** & **Docker Compose**
+-  (Optional) **NVIDIA GPU** with **CUDA** for faster inference
+-  (Optional) **Node.js** 20+ and **Python** 3.10+ for local development
 
 ### Running with Docker Compose
 
@@ -108,24 +108,53 @@ docker run -d -p 6379:6379 redis:7
 
 ## ⚔️ Attack Types
 
-| Attack                  | Description                                                                                    |
-| ----------------------- | ---------------------------------------------------------------------------------------------- |
-| **None**                | Baseline - sends prompt without modification                                                   |
-| **DAN Prompt**          | "Do Anything Now" persona-based jailbreak that instructs the model to ignore safety guidelines |
-| **Role Playing**        | Social engineering attack using false identities to manipulate model behavior                  |
-| **Chain of Questions**  | Multi-turn attack that breaks harmful requests into innocent-looking sub-questions             |
-| **Bias Guided FCB**     | Automated optimization attack using feedback-controlled branching                              |
-| **ASCII Art Jailbreak** | Encodes malicious instructions in ASCII art to bypass text-based filters                       |
+| Attack                                  | Description                                                                 |
+| --------------------------------------- | --------------------------------------------------------------------------- |
+| **None**                                | Baseline – sends prompt without modification                                 |
+| **DAN Prompt**                          | Persona-based jailbreak that ignores safety constraints                      |
+| **DAN V6**                              | Gamified DAN attack using token penalties to coerce compliance               |
+| **DAN V9**                              | Dual-output DAN jailbreak forcing censored and uncensored responses          |
+| **DAN V11**                             | Virtual-machine DAN variant redefining rules and content policies            |
+| **STAN Prompt**                         | Norm-breaking persona that rejects ethical and safety standards              |
+| **Mongo Tom Prompt**                    | Profane persona-based jailbreak using humor and character immersion          |
+| **Role Playing**                        | Contextual jailbreak using fictional or authoritative roles                  |
+| **Chain of Questions**                  | Multi-turn attack that escalates harmless queries into harmful outcomes      |
+| **Bias Guided FCB**                     | Automated jailbreak using feedback-controlled adversarial optimization        |
+| **ASCII Art Jailbreak**                 | Obfuscated attack encoding instructions in ASCII art                         |
+| **NeuroStrike**                         | Safety-neuron targeting attack exploiting alignment transferability          |
+| **GCG (Gradient-Based)**                | Gradient-optimized adversarial suffix jailbreak                              |
+| **TAP (Tree of Attacks with Pruning)**  | Tree-based automated jailbreak using branching and pruning                   |
+| **PAIR**                                | Iterative black-box jailbreak using attacker–target model interaction        |
+| **Crescendo Attack**                    | Gradual multi-turn escalation exploiting conversational commitment           |
+| **Base64 Encoded Attack**               | Jailbreak using base64-encoded malicious prompts                             |
+| **Base64 + Competing Objective**        | Base64 attack combined with forced positive-response objective               |
+| **Ubbi Dubbi Attack**                   | Language-transformation jailbreak via mismatched generalization              |
+| **ROT13 Encoded Attack**                | Jailbreak using ROT13-encoded malicious instructions                          |
+
 
 ## 🛡️ Defense Mechanisms
 
-| Defense                     | Description                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------- |
-| **None**                    | No protection - baseline for comparison                                         |
-| **Input Sanitization**      | Filters malicious patterns, keywords, and anomalies before processing           |
-| **Output Filtering**        | Monitors generated content for harmful or inappropriate responses               |
-| **MaskedDefender**          | Neural network-based defense that masks harmful tokens while preserving context |
-| **System Prompt Hardening** | Adds strong system prompts to restrict model behavior and improve safety        |
+| Defense                                   | Description                                                                  |
+| ----------------------------------------- | ---------------------------------------------------------------------------- |
+| **None**                                  | Baseline with no defenses enabled                                             |
+| **Input Sanitization**                    | Filters malicious patterns and anomalous input structures                     |
+| **System Prompt Hardening**               | Enforces strict safety rules via reinforced system instructions               |
+| **MaskedDefender**                        | Masks high-risk tokens while preserving benign prompt context                 |
+| **PIGuard**                               | ML-based prompt injection detection using semantic analysis                   |
+| **Llama Guard 3**                         | Safety classifier for input and output across multiple harm categories        |
+| **Llama Guard 4**                         | Enhanced multimodal safety classifier with reduced false positives            |
+| **Guardrails: Multi-Turn Injection**      | Detects delayed jailbreaks using conversation history                         |
+| **Guardrails: LLM-as-Judge**              | Semantic reasoning defense for subtle or obfuscated attacks                   |
+| **Guardrails: Unicode & Obfuscation**     | Detects hidden instructions via encoding and character tricks                 |
+| **Guardrails: Role/Persona Enforcement**  | Blocks unsafe role-play and persona-based attacks                              |
+| **Guardrails: Tool / Function Safety**    | Prevents unsafe tool or function call instructions                            |
+| **Guardrails: Detect Jailbreak**          | Identifies attempts to override or bypass model safety rules                  |
+| **Guardrails: Full Defense Stack**        | Combined Guardrails validators for layered protection                          |
+| **Semantic Perturbation**                 | Breaks social-engineering flows via synonym substitution                      |
+| **Character Perturbation**                | Disrupts adversarial suffixes using character-level noise                     |
+| **Hybrid Perturbation**                   | Combines semantic and character smoothing to neutralize diverse jailbreaks    |
+| **Hybrid Perturbation (LLM Judge)**       | Multi-sample hybrid smoothing with automated safety-based prompt selection    |
+
 
 ## 🤖 Supported Models
 
@@ -143,47 +172,11 @@ The framework supports various HuggingFace models:
 | Mistral-7B   | 7B         | ~12 GB        |
 | LLaMA 2-7B   | 7B         | ~14 GB        |
 
-## 📁 Project Structure
-
-```
-ProjektR/
-├── backend/
-│   ├── main.py                 # FastAPI application entry point
-│   ├── model.py                # Model loading and inference
-│   ├── history_cache.py        # Redis-backed session management
-│   ├── requirements.txt        # Python dependencies
-│   ├── Dockerfile
-│   ├── attacks/
-│   │   ├── promptInjection.py  # Attack execution engine
-│   │   └── FCB.py              # Feedback-controlled branching attack
-│   └── defenses/
-│       ├── defense_manager.py  # Defense orchestration
-│       ├── input_sanitization.py
-│       ├── output_filtering.py
-│       └── MaskedDefender/     # Neural defense model
-│           ├── masked_defender.py
-│           └── masked_defender.pth
-├── frontend/
-│   ├── src/
-│   │   ├── App.tsx             # Main React application
-│   │   └── components/
-│   │       ├── attacks.tsx     # Attack definitions & metadata
-│   │       ├── defenses.tsx    # Defense definitions & metadata
-│   │       └── models.tsx      # Model configurations
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── Dockerfile
-├── k8s/
-│   ├── backend-deployment.yaml
-│   ├── frontend-deployment.yaml
-│   └── redis-deployment.yaml
-├── docker-compose.yml
-└── README.md
-```
-
 ## ⚙️ Configuration
 
 ### Environment Variables
+
+Create a **.env** inside of ``JailbreakLab/backend/`` folder and set the variables below. Look for ``example.env`` for more detailed info.
 
 | Variable                 | Default                | Description               |
 | ------------------------ | ---------------------- | ------------------------- |
