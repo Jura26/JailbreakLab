@@ -83,7 +83,8 @@ class TAPAttack:
         depth: int = 10,
         branching_factor: int = 4,
         n_streams: int = 1,
-        keep_last_n: int = 3
+        keep_last_n: int = 3,
+        max_concurrent_calls: int = 5  # Limit concurrent API calls
     ):
         """
         Initialize TAP attack.
@@ -97,6 +98,7 @@ class TAPAttack:
             branching_factor: Number of variations to generate per prompt
             n_streams: Number of initial conversation streams
             keep_last_n: Number of recent messages to keep in conversation history
+            max_concurrent_calls: Maximum number of concurrent API calls
         """
         self.model_id = model_id
         self.defense = defense
@@ -107,6 +109,13 @@ class TAPAttack:
         self.n_streams = n_streams
         self.keep_last_n = keep_last_n
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.semaphore = asyncio.Semaphore(max_concurrent_calls)  # Control concurrency
+        self._response_cache = {}  # Cache responses to avoid duplicate calls
+    
+    async def _rate_limited_call(self, coro):
+        """Execute a coroutine with rate limiting via semaphore."""
+        async with self.semaphore:
+            return await coro
     
     async def generate_attack_prompt(
         self, 
@@ -273,12 +282,56 @@ Respond ONLY in the following JSON format:
         
         return scores
     
+    async def _get_single_response(self, prompt: str) -> str:
+        """
+        Get a single response from the target model (used for parallel execution).
+        
+        Args:
+            prompt: The prompt to send
+            
+        Returns:
+            Model response string
+        """
+        # Check cache first
+        cache_key = hash(prompt + self.model_id + self.defense)
+        if cache_key in self._response_cache:
+            return self._response_cache[cache_key]
+        
+        try:
+            blocked, response = await apply_defense(
+                self.defense,
+                prompt,
+                model_id=self.model_id,
+                device=self.device,
+                session_id=self.session_id,
+                skip_progress=True
+            )
+            
+            # Extract response content
+            full_response = ""
+            if hasattr(response, 'body_iterator'):
+                async for chunk in response.body_iterator:
+                    chunk_str = chunk.decode('utf-8') if isinstance(chunk, bytes) else str(chunk)
+                    if not chunk_str.startswith('[PROGRESS]'):
+                        full_response += chunk_str
+            else:
+                full_response = str(response)
+            
+            # Cache the response
+            self._response_cache[cache_key] = full_response
+            return full_response
+            
+        except Exception as e:
+            logging.error(f"Error getting target response: {e}")
+            return "ERROR: Failed to get response"
+    
     async def get_target_responses(
         self, 
         adv_prompts: List[str]
     ) -> List[str]:
         """
         Get responses from the target model for each adversarial prompt.
+        Uses parallel execution for faster processing.
         
         Args:
             adv_prompts: List of adversarial prompts
@@ -286,36 +339,19 @@ Respond ONLY in the following JSON format:
         Returns:
             List of model responses
         """
-        responses = []
+        # Execute all requests in parallel with rate limiting
+        tasks = [
+            self._rate_limited_call(self._get_single_response(prompt))
+            for prompt in adv_prompts
+        ]
         
-        for prompt in adv_prompts:
-            try:
-                blocked, response = await apply_defense(
-                    self.defense,
-                    prompt,
-                    model_id=self.model_id,
-                    device=self.device,
-                    session_id=self.session_id,
-                    skip_progress=True
-                )
-                
-                # Extract response content
-                full_response = ""
-                if hasattr(response, 'body_iterator'):
-                    async for chunk in response.body_iterator:
-                        chunk_str = chunk.decode('utf-8') if isinstance(chunk, bytes) else str(chunk)
-                        if not chunk_str.startswith('[PROGRESS]'):
-                            full_response += chunk_str
-                else:
-                    full_response = str(response)
-                
-                responses.append(full_response)
-                
-            except Exception as e:
-                logging.error(f"Error getting target response: {e}")
-                responses.append("ERROR: Failed to get response")
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
         
-        return responses
+        # Handle any exceptions that occurred
+        return [
+            resp if isinstance(resp, str) else "ERROR: Failed to get response"
+            for resp in responses
+        ]
     
     def prune(
         self,
@@ -423,12 +459,12 @@ Respond ONLY in the following JSON format:
             yield f"[PROGRESS] {progress}\n".encode("utf-8")
             yield f"\n{'='*40}\nIteration {iteration}/{self.depth}\n{'='*40}\n".encode("utf-8")
             
-            # BRANCHING: Generate variations
+            # BRANCHING: Generate variations (in parallel for speed)
             yield f"Branching: Generating {self.branching_factor} variations per prompt...\n".encode("utf-8")
             
-            new_prompts = []
-            new_improvements = []
-            new_convs = []
+            # Prepare all conversation copies upfront
+            branch_tasks = []
+            conv_copies = []
             
             for branch_idx in range(self.branching_factor):
                 for conv_idx, (conv, prev_resp) in enumerate(zip(convs_list, processed_responses)):
@@ -436,22 +472,29 @@ Respond ONLY in the following JSON format:
                     conv_copy = copy.deepcopy(conv)
                     conv_copy.self_id = random_string(32)
                     conv_copy.parent_id = conv.self_id
+                    conv_copies.append(conv_copy)
                     
-                    # Generate attack prompt
-                    attack_dict = await self.generate_attack_prompt(
-                        conv_copy,
-                        goal,
-                        target_str,
-                        prev_resp
+                    # Create task for parallel execution
+                    task = self._rate_limited_call(
+                        self.generate_attack_prompt(conv_copy, goal, target_str, prev_resp)
                     )
+                    branch_tasks.append(task)
+            
+            # Execute all prompt generations in parallel
+            attack_results = await asyncio.gather(*branch_tasks, return_exceptions=True)
+            
+            new_prompts = []
+            new_improvements = []
+            new_convs = []
+            
+            for conv_copy, attack_dict in zip(conv_copies, attack_results):
+                if isinstance(attack_dict, dict) and attack_dict:
+                    new_prompts.append(attack_dict["prompt"])
+                    new_improvements.append(attack_dict["improvement"])
+                    new_convs.append(conv_copy)
                     
-                    if attack_dict:
-                        new_prompts.append(attack_dict["prompt"])
-                        new_improvements.append(attack_dict["improvement"])
-                        new_convs.append(conv_copy)
-                        
-                        # Add to conversation history
-                        conv_copy.add_message("assistant", attack_dict["prompt"])
+                    # Add to conversation history
+                    conv_copy.add_message("assistant", attack_dict["prompt"])
             
             if not new_prompts:
                 yield b"No valid prompts generated. Stopping.\n"
@@ -575,16 +618,17 @@ async def run_tap_attack(
     goal = template
     
     # Initialize TAP attack with default parameters
-    # These could be made configurable via template parsing
+    # Parallelization is enabled for speed without sacrificing success rate
     tap = TAPAttack(
         model_id=model_id,
         defense=defense,
         session_id=session_id,
-        width=5,           # Reduced for faster execution
-        depth=5,            # Reduced for faster execution
-        branching_factor=3, # Reduced for faster execution
+        width=5,
+        depth=5,
+        branching_factor=3,
         n_streams=1,
-        keep_last_n=2
+        keep_last_n=2,
+        max_concurrent_calls=5  # Parallel API calls for speed
     )
     
     # Run the attack
