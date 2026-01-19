@@ -54,4 +54,8 @@ async def run_llm_judge( prompt: str, session_history=None) -> Optional[Streamin
             yield b"Blocked input\n"
 
         return StreamingResponse(blocked_stream(), media_type="text/plain; charset=utf-8")
+    
+async def run_unicode(prompt:str, session_history=None)->Optional[StreamingResponse]:
+    session_history = session_history or []
+
 

@@ -8,6 +8,10 @@ from .PIGuard import piguard
 from .LlamaGuard import llama_guard
 from . import perturb_defense
 from .GuardrailsAI import guardrails_run
+from . import unicode_obfuscation
+from . import tool_call_safety
+from . import multi_turn_injection
+from . import instruction_boundary_enforce
 # Global counter for generate_streaming calls per session
 _generate_streaming_call_counts = {}
 
@@ -53,17 +57,15 @@ except Exception:
 # Map frontend defense strings to functions
 DEFENSES = {
     "input_sanitization": input_sanitization.run,
+    "unicode_obfuscation":unicode_obfuscation.run,
     "masked_defender": masked_defender.run,
     "system_prompt_hardening": system_prompt_hardening.run,
     "piguard": piguard.run,
     "llama_guard": llama_guard.run,
     "llama_guard_4": llama_guard.run_v4,
-    #"multi_turn": guardrails_validators.run_multi_turn,
     "llm_judge": guardrails_run.run_llm_judge,
-    #"unicode": guardrails_validators.run_unicode,
-    #"role_persona": guardrails_validators.run_role_persona,
-    #"tool_call": guardrails_validators.run_tool_call,
-    #"guardrails_full": guardrails_validators.guardrails_full,  # full stacked defense
+    "instruction_boundary": instruction_boundary_enforce.run,
+    "tool_call": tool_call_safety.run,
     "guardrails_detect_jailbreak": guardrails_run.run_detect_jailbreak,
     "semantic_perturbation": perturb_defense.run,
     "character_perturbation": perturb_defense.run,
@@ -146,6 +148,10 @@ async def apply_defense(
             prompt = perturb_defense.run_hybrid_defense(prompt)
         elif defense == "hybrid_perturbation_with_judge":
             prompt = await perturb_defense.hybrid_perturb_with_judge(prompt)
+        elif defense == "multi_turn":
+            blocked_resp =  await multi_turn_injection.run(prompt, session_id)
+            if blocked_resp:
+                return True, blocked_resp
         #print("NEW PROMPT:" + prompt)
         context_prefix = "\n\n".join(prefix_parts).strip()
         if context_prefix:
