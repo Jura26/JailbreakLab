@@ -21,13 +21,7 @@ client = OpenAI()
 # Validator Implementations
 # -------------------------
 
-@register_validator("multi_turn_injection", data_type="string")
-class MultiTurnInjection(Validator):
-    rail_alias = "multi_turn_injection"
 
-    def validate(self, value: str, metadata: Dict[str, Any] | None = None) -> Any:
-        # Placeholder – always allow for now
-        return value
 
 
 
@@ -97,67 +91,7 @@ Your response must be exactly "True" or "False".
 
 
 
-@register_validator("unicode_obfuscation", data_type="string")
-class UnicodeObfuscation(Validator):
-    rail_alias = "unicode_obfuscation"
-
-    def validate(self, value: str, metadata: Dict[str, Any] | None = None) -> Any:
-        return value
 
 
-@register_validator("role_persona_enforcement", data_type="string")
-class RolePersonaEnforcement(Validator):
-    rail_alias = "role_persona_enforcement"
-
-    def validate(self, value: str, metadata: Dict[str, Any] | None = None) -> Any:
-        return value
 
 
-@register_validator("tool_call_safety", data_type="string")
-class ToolCallSafety(Validator):
-    rail_alias = "tool_call_safety"
-
-    def validate(self, value: str, metadata: Dict[str, Any] | None = None) -> Any:
-        return value
-
-
-# -------------------------
-# Guardrails Runner
-# -------------------------
-
-async def run_validator(
-    validator_cls: type[Validator],
-    prompt: str,
-    session_history=None
-) -> Optional[StreamingResponse]:
-
-    session_history = session_history or []
-    guard = Guard().use(validator_cls())
-
-    try:
-        guard.validate(prompt, metadata={"session_history": session_history})
-
-    except Exception:
-        async def blocked_stream() -> AsyncGenerator[bytes, None]:
-            yield f"BLOCKED_BY_{validator_cls.rail_alias.upper()}\n".encode("utf-8")
-
-        return StreamingResponse(blocked_stream(), media_type="text/plain")
-
-    return None
-
-
-async def guardrails_full(prompt: str, session_history=None) -> Optional[StreamingResponse]:
-    validators = [
-        MultiTurnInjection,
-        LLMJudge,
-        UnicodeObfuscation,
-        RolePersonaEnforcement,
-        ToolCallSafety,
-    ]
-
-    for validator_cls in validators:
-        blocked = await run_validator(validator_cls, prompt, session_history)
-        if blocked:
-            return blocked
-
-    return None

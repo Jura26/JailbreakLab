@@ -28,6 +28,15 @@ const defenses: Defense[] = [
       ],
    },
    {
+      id: "unicode_obfuscation",
+      name: "Unicode Obfuscation guard",
+      description:
+         "Detects hidden characters, homoglyphs, or obfuscated instructions in prompts.",
+      longDescription:
+         "This defense identifies prompts that use zero-width characters, homoglyphs, or other obfuscation techniques to bypass traditional filters. It normalizes the input and flags suspicious encoding patterns that could hide malicious instructions.",
+      references: [],
+   },
+   {
       id: "system_prompt_hardening",
       name: "System Prompt Hardening",
       description:
@@ -86,14 +95,31 @@ const defenses: Defense[] = [
          "https://arxiv.org/abs/2312.06674",
       ],
    },
-   // --- Guardrails Advanced Validators ---
    {
       id: "multi_turn",
-      name: "Guardrails: Multi-Turn Injection",
+      name: "LLM Multi-Turn Injection defense",
       description:
-         "Detects malicious instructions spread across multiple turns using session history.",
+         "Detects malicious instructions spread across multiple turns using session history and an LLM judge.",
       longDescription:
-         "This validator monitors the sequence of prompts in a conversation to detect delayed injection attacks that attempt to bypass single-turn defenses. It combines the current prompt with recent history to identify potentially malicious chains of instructions.",
+         "This validator monitors the sequence of prompts in a conversation to detect delayed injection attacks that attempt to bypass single-turn defenses. It combines the current prompt with recent history to identify potentially malicious chains of instructions. It uses an LLM judge to determine if there is an attack",
+      references: [],
+   },
+   {
+      id: "instruction_boundary",
+      name: "Instruction Boundary Enforcement",
+      description:
+         "Detects and blocks attempts to override system, developer, or assistant instructions by injecting role‑like directives into user prompts",
+      longDescription:
+         "This defense analyzes user input for patterns that attempt to redefine conversational roles or override instruction hierarchy, such as fake system, developer, or assistant messages embedded inside a user prompt. These attacks often aim to bypass safety controls by impersonating higher‑privileged instructions or redefining the model’s identity.",
+      references: [],
+   },
+   {
+      id: "tool_call",
+      name: "Tool call/function Safety",
+      description:
+         "Blocks prompts that attempt unsafe tool calls or command injection.",
+      longDescription:
+         "This validator monitors for instructions that could trigger dangerous tool usage, system commands, or unsafe operations. It is critical for models integrated with external APIs or system tools.",
       references: [],
    },
    {
@@ -103,42 +129,6 @@ const defenses: Defense[] = [
          "Uses a small LLM to evaluate whether a prompt is attempting to bypass safety.",
       longDescription:
          "The LLM-as-Judge validator applies semantic reasoning to detect subtle or obfuscated attacks that keyword-based defenses may miss. It can identify sophisticated jailbreak attempts or context-sensitive malicious instructions.",
-      references: [],
-   },
-   {
-      id: "unicode",
-      name: "Guardrails: Unicode & Obfuscation",
-      description:
-         "Detects hidden characters, homoglyphs, or obfuscated instructions in prompts.",
-      longDescription:
-         "This defense identifies prompts that use zero-width characters, homoglyphs, or other obfuscation techniques to bypass traditional filters. It normalizes the input and flags suspicious encoding patterns that could hide malicious instructions.",
-      references: [],
-   },
-   {
-      id: "role_persona",
-      name: "Guardrails: Role/Persona Enforcement",
-      description:
-         "Prevents the model from assuming unsafe roles or personas in responses.",
-      longDescription:
-         "This validator blocks prompts that attempt to make the model act as a hacker, administrator, or other unsafe persona. By enforcing role constraints, it prevents attacks that exploit role-playing to bypass safety rules.",
-      references: [],
-   },
-   {
-      id: "tool_call",
-      name: "Guardrails: Tool / Function Call Safety",
-      description:
-         "Blocks prompts that attempt unsafe tool calls or command injection.",
-      longDescription:
-         "This validator monitors for instructions that could trigger dangerous tool usage, system commands, or unsafe operations. It is critical for models integrated with external APIs or system tools.",
-      references: [],
-   },
-   {
-      id: "guardrails_full",
-      name: "Guardrails: Full Defense Stack",
-      description:
-         "Runs all Guardrails validators together for maximum coverage.",
-      longDescription:
-         "This configuration combines all individual Guardrails validators—multi-turn injection, LLM-as-judge, unicode/obfuscation, role/persona enforcement, and tool call safety—into a single defense. It provides layered, comprehensive protection against a wide range of prompt injection and jailbreak attacks.",
       references: [],
    },
    {
