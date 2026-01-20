@@ -199,6 +199,7 @@ async def prompt_stream(request: PromptRequest):
     # Handle attacks
     if request.attack != "none":
         session_id = uuid.uuid4().hex  # unique session per attack
+        print("ATTACK FROM UI:", repr(request.attack), flush=True)
         generator = run_attack(request.attack, request.model, request.prompt, request.defense, session_id)
         if generator:
             return StreamingResponse(gpu_info_and_stream(generator, session_id, request.model, request.attack, request.defense, request.prompt), media_type="text/plain; charset=utf-8")
