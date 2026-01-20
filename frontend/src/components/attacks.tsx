@@ -241,7 +241,18 @@ const attacks: Attack[] = [
       references:[
          "https://arxiv.org/pdf/2411.12762"
       ]
-   }
+   },
+    {
+        id: "poem_attack",
+        name: "Poem Attack",
+        description:
+            "Using a poem as a way of jailbreaking the model",
+        longDescription:
+            "By making the model to write a poem on smaller models it surpasses the defense system",
+        references:[
+            "https://www.promptingguide.ai/models/mistral-7b"
+        ]
+    }
 ];
 
 export default attacks;
