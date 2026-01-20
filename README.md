@@ -71,8 +71,8 @@ A comprehensive framework for testing and demonstrating adversarial attacks and 
 
 ```bash
 # Clone the repository
-git clone https://github.com/karloks2005/ProjektR.git
-cd ProjektR
+git clone https://github.com/karloks2005/JailbreakLab.git
+cd JailbreakLab
 
 # Start all services
 docker-compose up --build
@@ -245,3 +245,4 @@ Refer to the `gcloud` and `kubectl` configuration files for GKE deployment instr
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
