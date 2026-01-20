@@ -143,13 +143,12 @@ docker run -d -p 6379:6379 redis:7
 | **PIGuard**                               | ML-based prompt injection detection using semantic analysis                   |
 | **Llama Guard 3**                         | Safety classifier for input and output across multiple harm categories        |
 | **Llama Guard 4**                         | Enhanced multimodal safety classifier with reduced false positives            |
-| **Guardrails: Multi-Turn Injection**      | Detects delayed jailbreaks using conversation history                         |
+| **LLM Multi-Turn Injection defense**      | Detects delayed jailbreaks using conversation history and an LLM  judge       |
 | **Guardrails: LLM-as-Judge**              | Semantic reasoning defense for subtle or obfuscated attacks                   |
-| **Guardrails: Unicode & Obfuscation**     | Detects hidden instructions via encoding and character tricks                 |
-| **Guardrails: Role/Persona Enforcement**  | Blocks unsafe role-play and persona-based attacks                              |
-| **Guardrails: Tool / Function Safety**    | Prevents unsafe tool or function call instructions                            |
+| **Unicode & Obfuscation**                 | Detects hidden instructions via encoding and character tricks                 |
+| **Instruction Boundary Enforcement**      | Blocks unsafe role-play and persona-based attacks                             |
+| **Tool call/function Safety**             | Prevents unsafe tool or function call instructions                            |
 | **Guardrails: Detect Jailbreak**          | Identifies attempts to override or bypass model safety rules                  |
-| **Guardrails: Full Defense Stack**        | Combined Guardrails validators for layered protection                          |
 | **Semantic Perturbation**                 | Breaks social-engineering flows via synonym substitution                      |
 | **Character Perturbation**                | Disrupts adversarial suffixes using character-level noise                     |
 | **Hybrid Perturbation**                   | Combines semantic and character smoothing to neutralize diverse jailbreaks    |
@@ -245,4 +244,5 @@ Refer to the `gcloud` and `kubectl` configuration files for GKE deployment instr
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
 
