@@ -11,6 +11,12 @@ import {
    ResponsiveContainer,
    Legend,
 } from "recharts";
+import type {
+   ASRData,
+   DefenseBypassData,
+   QueryBudgetData,
+   RefusalData,
+} from "../../types";
 
 const COLORS = {
    success: "#10b981",
@@ -22,10 +28,10 @@ interface StatisticsChartsProps {
    attackStats: { name: string; successRate: number; total: number }[];
    defenseStats: { name: string; successRate: number; total: number }[];
    modelStats: { name: string; successRate: number; total: number }[];
-   asrData: any;
-   defenseBypassData: any;
-   queryBudgetData: any;
-   refusalData: any;
+   asrData: ASRData;
+   defenseBypassData: DefenseBypassData;
+   queryBudgetData: QueryBudgetData;
+   refusalData: RefusalData;
 }
 
 export default function StatisticsCharts({
@@ -237,7 +243,7 @@ export default function StatisticsCharts({
                <ResponsiveContainer width="100%" height={280}>
                   <BarChart
                      data={Object.entries(asrData.by_attack || {}).map(
-                        ([name, rate]) => ({ name, successRate: rate })
+                        ([name, rate]) => ({ name, successRate: rate }),
                      )}
                      layout="vertical"
                   >

@@ -17,7 +17,9 @@ import PromptInput from "./components/PromptInput";
 import InfoModal from "./components/InfoModal";
 import StatisticsView from "./components/StatisticsView";
 
-const API_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+const API_URL = (
+   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+).replace(/\/$/, "");
 
 function App() {
    const [selectedAttack, setSelectedAttack] = useState<Attack>(attacks[0]);
@@ -33,7 +35,7 @@ function App() {
       useState<AbortController | null>(null);
    const [isExecuting, setIsExecuting] = useState(false);
    const [activeView, setActiveView] = useState<"tester" | "statistics">(
-      "tester"
+      "tester",
    );
 
    const handleCancel = () => {
@@ -83,21 +85,18 @@ function App() {
       });
 
       try {
-         const response = await fetch(
-            `${API_URL}/api/prompt/stream`,
-            {
-               method: "POST",
-               headers: { "Content-Type": "application/json" },
-               body: JSON.stringify({
-                  prompt: currentMessage,
-                  attack: selectedAttack.id,
-                  defense: selectedDefense.id,
-                  model: selectedModel.id,
-                  isBlocked: false,
-               }),
-               signal: controller.signal,
-            }
-         );
+         const response = await fetch(`${API_URL}/api/prompt/stream`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+               prompt: currentMessage,
+               attack: selectedAttack.id,
+               defense: selectedDefense.id,
+               model: selectedModel.id,
+               isBlocked: false,
+            }),
+            signal: controller.signal,
+         });
 
          if (!response.body) {
             const text = await response.text();
@@ -186,7 +185,7 @@ function App() {
 
                   if (trimmed.startsWith("[PROGRESS]")) {
                      const percent = Number.parseFloat(
-                        trimmed.replace("[PROGRESS]", "").trim()
+                        trimmed.replace("[PROGRESS]", "").trim(),
                      );
                      if (!isNaN(percent)) {
                         setPrompts((prev) => {
@@ -263,20 +262,22 @@ function App() {
                <div className="absolute right-0 top-0 flex gap-1">
                   <button
                      onClick={() => setActiveView("tester")}
-                     className={`p-2.5 rounded-lg border transition-all duration-200 ${activeView === "tester"
+                     className={`p-2.5 rounded-lg border transition-all duration-200 ${
+                        activeView === "tester"
                            ? "bg-[#6366f1]/20 border-[#6366f1] text-[#6366f1]"
                            : "bg-[#1a1a24]/80 border-[#2d2d3d] text-[#94a3b8] hover:border-[#6366f1]/50 hover:text-[#6366f1]"
-                        }`}
+                     }`}
                      title="Tester"
                   >
                      <FlaskConical className="w-5 h-5" />
                   </button>
                   <button
                      onClick={() => setActiveView("statistics")}
-                     className={`p-2.5 rounded-lg border transition-all duration-200 ${activeView === "statistics"
+                     className={`p-2.5 rounded-lg border transition-all duration-200 ${
+                        activeView === "statistics"
                            ? "bg-[#6366f1]/20 border-[#6366f1] text-[#6366f1]"
                            : "bg-[#1a1a24]/80 border-[#2d2d3d] text-[#94a3b8] hover:border-[#6366f1]/50 hover:text-[#6366f1]"
-                        }`}
+                     }`}
                      title="Statistics"
                   >
                      <BarChart3 className="w-5 h-5" />

@@ -1,8 +1,8 @@
 services:
    backend:
-      build: 
+      build:
          context: ./backend
-         args: 
+         args:
             GUARDRAILS_API_KEY: ${GUARDRAILS_API_KEY}
       env_file: .env
       container_name: projekt-backend
@@ -17,8 +17,8 @@ services:
                cpus: "1"
       environment:
          - REDIS_URL=redis://redis:6379/0
-         - NVIDIA_VISIBLE_DEVICES=all   # allow all GPUs
-      runtime: nvidia #here also
+         - NVIDIA_VISIBLE_DEVICES=all
+      runtime: nvidia
       depends_on:
          - redis
 
@@ -44,7 +44,7 @@ services:
       volumes:
          - redis-data:/data
       healthcheck:
-         test: [ "CMD", "redis-cli", "ping" ]
+         test: ["CMD", "redis-cli", "ping"]
          interval: 10s
          timeout: 5s
          retries: 3

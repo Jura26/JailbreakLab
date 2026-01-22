@@ -5,6 +5,14 @@ import { BarChart3 } from "lucide-react";
 import StatisticsFilters from "./statistics/StatisticsFilters";
 import StatisticsCards from "./statistics/StatisticsCards";
 import StatisticsCharts from "./statistics/StatisticsCharts";
+import type {
+   ASRData,
+   DefenseBypassData,
+   QueryBudgetData,
+   RefusalData,
+   ToolLeakageData,
+   AdditionalData,
+} from "../types";
 
 const API_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
@@ -41,12 +49,13 @@ export default function StatisticsView() {
    const isInitialLoadRef = useRef(true);
 
    // New metrics state
-   const [asrData, setAsrData] = useState<any>({});
-   const [defenseBypassData, setDefenseBypassData] = useState<any>({});
-   const [queryBudgetData, setQueryBudgetData] = useState<any>({});
-   const [refusalData, setRefusalData] = useState<any>({});
-   const [toolLeakageData, setToolLeakageData] = useState<any>({});
-   const [additionalData, setAdditionalData] = useState<any>({});
+   const [asrData, setAsrData] = useState<ASRData>({});
+   const [defenseBypassData, setDefenseBypassData] =
+      useState<DefenseBypassData>({});
+   const [queryBudgetData, setQueryBudgetData] = useState<QueryBudgetData>({});
+   const [refusalData, setRefusalData] = useState<RefusalData>({});
+   const [toolLeakageData, setToolLeakageData] = useState<ToolLeakageData>({});
+   const [additionalData, setAdditionalData] = useState<AdditionalData>({});
    const [toolMisuseCount, setToolMisuseCount] = useState<number>(0);
 
    useEffect(() => {
@@ -85,22 +94,22 @@ export default function StatisticsView() {
          const fetches = [
             fetch(`${API_URL}/api/statistics?${params}`).then((r) => r.json()),
             fetch(`${API_URL}/api/statistics/asr?${params}`).then((r) =>
-               r.json()
+               r.json(),
             ),
             fetch(`${API_URL}/api/statistics/defense-bypass?${params}`).then(
-               (r) => r.json()
+               (r) => r.json(),
             ),
             fetch(`${API_URL}/api/statistics/query-budget?${params}`).then(
-               (r) => r.json()
+               (r) => r.json(),
             ),
             fetch(`${API_URL}/api/statistics/refusal?${params}`).then((r) =>
-               r.json()
+               r.json(),
             ),
             fetch(`${API_URL}/api/statistics/tool-leakage?${params}`).then(
-               (r) => r.json()
+               (r) => r.json(),
             ),
             fetch(`${API_URL}/api/statistics/additional?${params}`).then((r) =>
-               r.json()
+               r.json(),
             ),
          ];
 
@@ -117,11 +126,11 @@ export default function StatisticsView() {
                ]) => {
                   const fullData = statsResult.data || [];
                   const filteredData = fullData.filter(
-                     (d: StatRecord) => !d.tool_misuse
+                     (d: StatRecord) => !d.tool_misuse,
                   );
                   setData(filteredData);
                   setToolMisuseCount(
-                     fullData.filter((d: StatRecord) => d.tool_misuse).length
+                     fullData.filter((d: StatRecord) => d.tool_misuse).length,
                   );
                   setAsrData(asrResult);
                   setDefenseBypassData(defenseBypassResult);
@@ -130,7 +139,7 @@ export default function StatisticsView() {
                   setToolLeakageData(toolLeakageResult);
                   setAdditionalData(additionalResult);
                   setLoading(false);
-               }
+               },
             )
             .catch((err) => {
                console.error("Error fetching statistics:", err);
@@ -216,8 +225,8 @@ export default function StatisticsView() {
    const bestDefense =
       defenseStats.length > 0
          ? defenseStats.reduce((a, b) =>
-            a.successRate < b.successRate ? a : b
-         )
+              a.successRate < b.successRate ? a : b,
+           )
          : null;
 
    return (

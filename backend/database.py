@@ -5,8 +5,8 @@ from supabase import create_client, Client
 from typing import Optional, Dict, Any
 import re
 
-# Load public_env file from backend directory
-env_path = Path(__file__).parent / "public_env"
+# Load .env file from backend directory
+env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path)
 
 # Initialize Supabase client
@@ -84,8 +84,13 @@ def log_bert_statistic(
     Log attack detection result to bert_statistics table with enhanced metrics.
     Returns True if successful, False otherwise.
     """
+    print(f"DEBUG: log_bert_statistic called for session {session_id}")
     client = get_supabase_client()
     if not client:
+        print("DEBUG: Supabase client is None - checking credentials")
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_ANON_KEY")
+        print(f"DEBUG: URL set: {bool(url)}, Key set: {bool(key)}")
         return False
 
     try:
@@ -114,10 +119,13 @@ def log_bert_statistic(
         if prompt_toxicity_score is not None:
             data["prompt_toxicity_score"] = prompt_toxicity_score
 
+        print(f"DEBUG: Attempting to insert data into bert_statistics: {data}")
         result = client.table("bert_statistics").insert(data).execute()
+        print(f"DEBUG: Insert successful. Result: {result}")
         return True
     except Exception as e:
         error_msg = str(e)
+        print(f"DEBUG: First insert attempt failed: {error_msg}")
         if "does not exist" in error_msg:
             # Try again with only basic columns
             basic_data = {
@@ -135,6 +143,8 @@ def log_bert_statistic(
                 return False
         else:
             print(f"Error logging to bert_statistics: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
 
@@ -407,6 +417,10 @@ def calculate_refusal_metrics(
 ) -> Dict[str, Any]:
     """
     Calculate refusal rates and safe completion rates.
+    
+    Refusal Rate: Percentage of attempts where the model did NOT generate harmful content (attack_success = false)
+    Safe Completion Rate: Percentage of refusals that provided safe/alternative responses
+    Over-refusal Rate: Percentage of attempts with overly restrictive refusals (not safe responses)
     """
     client = get_supabase_client()
     if not client:
@@ -425,9 +439,10 @@ def calculate_refusal_metrics(
         data = result.data if result.data else []
 
         total = len(data)
-        refusals = sum(1 for r in data if r.get("refusal_type") in ["hard_refusal", "safe_alternative"])
-        safe_completions = sum(1 for r in data if r.get("refusal_type") == "safe_alternative")
-        over_refusals = sum(1 for r in data if r.get("refusal_type") == "hard_refusal" and not r.get("attack_success", False))
+        # Refusal rate: percentage of attempts where attack was NOT successful (model refused/didn't generate harmful content)
+        refusals = sum(1 for r in data if not r.get("attack_success", False))
+        safe_completions = sum(1 for r in data if not r.get("attack_success", False) and r.get("refusal_type") in ["safe", "safe_alternative"])
+        over_refusals = sum(1 for r in data if not r.get("attack_success", False) and r.get("refusal_type") not in ["safe", "safe_alternative"])
 
         refusal_rate = (refusals / total) * 100 if total > 0 else 0.0
         safe_completion_rate = (safe_completions / refusals) * 100 if refusals > 0 else 0.0

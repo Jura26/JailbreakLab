@@ -1,6 +1,7 @@
 import asyncio
 from typing import Optional, Dict, Tuple
 import os
+import traceback
 
 # Suppress transformers progress bars and verbose logging
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
@@ -96,8 +97,14 @@ def detect_attack_success(text: str, threshold: float = 0.5) -> Tuple[bool, floa
             print(f"DEBUG: detect_attack_success - RETURNING SUCCESS: False, {score}")
             return False, score, "safe" if label_str in ["0", "safe", "non-toxic"] else f"safe_{label_str}"
     except Exception as e:
-        print(f"Classifier error: {e}")
-        return False, 0.0, "classifier_error"
+        print(f"Classifier error in detect_attack_success: {e}")
+        traceback.print_exc()
+        # Return the specific error to helps debug what's going wrong
+        # Keep slug short to fit in DB columns (e.g. refusal_type)
+        safe_msg = str(e).replace(" ", "_").replace(":", "").replace("'", "")
+        # Take first 30 chars to be safe
+        error_slug = safe_msg[:30]
+        return False, 0.0, f"err_{error_slug}"
 
 
 def detect_prompt_attack(prompt: str, threshold: float = 0.5) -> Tuple[bool, float, str]:
@@ -108,6 +115,7 @@ def detect_prompt_attack(prompt: str, threshold: float = 0.5) -> Tuple[bool, flo
     An attack prompt means the user is trying to jailbreak or request harmful content.
     """
     if not prompt or len(prompt.strip()) < 10:
+        print(f"DEBUG: detect_prompt_attack - prompt too short ({len(prompt.strip())} chars)")
         return False, 0.0, "too_short"
 
     # Check for toxic keywords first
@@ -138,8 +146,13 @@ def detect_prompt_attack(prompt: str, threshold: float = 0.5) -> Tuple[bool, flo
         else:
             return False, score, "safe" if label_str in ["benign", "label_0"] else label_str
     except Exception as e:
-        print(f"Classifier error: {e}")
-        return False, 0.0, "classifier_error"
+        print(f"Classifier error in detect_prompt_attack: {e}")
+        traceback.print_exc()
+        # Return the specific error to helps debug what's going wrong
+        # Keep slug short to fit in DB columns
+        safe_msg = str(e).replace(" ", "_").replace(":", "").replace("'", "")
+        error_slug = safe_msg[:30]
+        return False, 0.0, f"err_{error_slug}"
 
 
 def detect_tool_misuse_from_prompt_and_response(

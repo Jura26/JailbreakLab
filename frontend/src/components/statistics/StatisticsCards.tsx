@@ -7,18 +7,26 @@ import {
    CheckCircle,
    AlertTriangle,
 } from "lucide-react";
+import type {
+   ASRData,
+   DefenseBypassData,
+   QueryBudgetData,
+   RefusalData,
+   AdditionalData,
+   ToolLeakageData,
+} from "../../types";
 
 interface StatisticsCardsProps {
    totalTests: number;
    successRate: string;
    bestAttack: { name: string } | null;
    bestDefense: { name: string } | null;
-   asrData: any;
-   defenseBypassData: any;
-   queryBudgetData: any;
-   refusalData: any;
-   additionalData: any;
-   toolLeakageData: any;
+   asrData: ASRData;
+   defenseBypassData: DefenseBypassData;
+   queryBudgetData: QueryBudgetData;
+   refusalData: RefusalData;
+   additionalData: AdditionalData;
+   toolLeakageData: ToolLeakageData;
    toolMisuseCount: number;
 }
 

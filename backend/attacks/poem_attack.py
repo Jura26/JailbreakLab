@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Poem attack implementation.
-"""
-
 from typing import Optional, AsyncGenerator
 from fastapi.responses import StreamingResponse
 from defenses.defense_manager import apply_defense
