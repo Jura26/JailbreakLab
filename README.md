@@ -7,31 +7,28 @@ A comprehensive framework for testing and demonstrating adversarial attacks and 
 ![React](https://img.shields.io/badge/react-19.x-61dafb.svg)
 ![Docker](https://img.shields.io/badge/docker-compose-2496ed.svg)
 
-## 📋 Table of Contents
+## Introduction to JailbreakLabs
+This project was developed as part of the Project R course at the Faculty of Electrical Engineering and Computing (FER), University of Zagreb. It is the result of a collaborative effort by a team of motivated and ambitious students under the mentorship of Prof. Stjepan Picek, PhD. The project focuses on creating a software framework for evaluating the security of machine learning models. The student team members are: Ivan Gabrilo, Karlo Kajba Šimanić (Team Lead), Luka Majcen, Timon Menalo, Zvonimir Sučić, Jurica Šlibar, and Luka Uršić.
 
-- [Overview](#overview)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Attack Types](#attack-types)
-- [Defense Mechanisms](#defense-mechanisms)
-- [Supported Models](#supported-models)
-- [Project Structure](#project-structure)
-- [Configuration](#configuration)
-- [Development](#development)
-- [Quick Start](#quick-start)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
+## Project Description
+JailbreakLabs is a modular, open-source software framework designed for the systematic testing of robustness and security mechanisms in Large Language Models (LLMs). The system enables researchers and development teams to conduct various types of jailbreak attacks — prompt manipulation techniques intended to bypass built-in ethical and safety filters of the models.
 
-## 🎯 Overview
+Through a unified interface, JailbreakLabs integrates diverse attack methodologies (such as adversarial prompts and social engineering techniques) and provides tools for response evaluation. This allows for the precise measurement of the Attack Success Rate (ASR) across different models, alongside other metrics integrated within the solution.
 
-**JailbreakLab** is an educational and research-oriented platform designed to:
+## Motivation
+The rapid development and integration of LLMs into everyday applications carry inherent risks, such as the generation of harmful content, leakage of private data, or the provision of dangerous instructions. Although model developers employ various techniques like RLHF (Reinforcement Learning from Human Feedback) to ensure the alignment of models with human values, these defense mechanisms have frequently proven vulnerable to both creative and automated attacks.
 
-- **Demonstrate** how various prompt injection and jailbreak attacks work against LLMs
-- **Evaluate** the effectiveness of different defense mechanisms
-- **Compare** model robustness across different architectures and sizes
-- **Educate** developers and researchers about LLM security vulnerabilities
+The motivation behind this project stems from the need for a standardized tool that facilitates red-teaming processes. Instead of ad-hoc testing, JailbreakLabs offers a structured approach to identifying vulnerabilities, thereby directly contributing to the development of more secure and reliable artificial intelligence systems.
 
-## ✨ Features
+## Objectives
+The primary objectives of this project are:
+  - Development of a Modular Solution – Building a system that allows for the simple implementation of new attack types and defense methods, while providing comprehensive metric
+    insights to ensure a deep understanding of experimental results.
+
+  - Knowledge Expansion – As a team of ambitious and motivated students, we believe that the security of artificial intelligence is just as important as its development. We
+    consider the existence of robust tools for conducting security experiments on LLMs to be vital for the future of the field.
+
+### ✨ Features
 
 - 🖥️ **Interactive Web Interface** - Modern React-based UI with real-time streaming responses
 - ⚔️ **Multiple Attack Vectors** - DAN prompts, role-playing, chain-of-questions, ASCII art jailbreaks, and more
@@ -42,11 +39,22 @@ A comprehensive framework for testing and demonstrating adversarial attacks and 
 - 🐳 **Containerized** - Full Docker Compose setup for easy deployment
 - ☸️ **Kubernetes Ready** - K8s manifests for production deployment
 
-## 🏗️ Architecture
+## System Architecture and Technologies
+### Technologies
+JailbreakLabs was developed using a wide range of modern technologies. The web interface was built using the widely-used React framework and the TypeScript programming language, ensuring a robust and type-safe frontend. The API layer is powered by the FastAPI framework and the Python programming language.
+
+To manage and load various AI models, we utilized the highly popular Hugging Face model hub along with its associated integration packages. For model loading and real-time interaction, the PyTorch framework serves as a critical component, supported by essential libraries such as numpy, transformers, and others (refer to the table below for a detailed overview of all utilized technologies).
+
+Data Flow Description:
+  - **User Interaction**: The user defines attack parameters via the React interface.
+  - **Request Handling**: FastAPI receives the request and, through the ModelWrapper component, initializes the selected LLM (either locally via transformers or through an API).
+  - **Attack Execution**: The Attack Module executes the selected jailbreak technique while simultaneously applying the chosen defense method.
+  - **Evaluation**: The model's generated response is processed by the Evaluator (utilizing guardrails-ai or nltk).
+  - **Persistence & Visualization**: Results are stored in the Supabase database, and visual representations are generated using the recharts library.
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    Frontend     │───▶│     Backend     │────▶│      Redis      │
+│    Frontend     │────▶│     Backend     │────▶│      Redis      │
 │  (React + Vite) │     │    (FastAPI)    │     │  (Session Cache)│
 │    Port 5173    │     │    Port 8000    │     │    Port 6379    │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
@@ -586,3 +594,4 @@ Info: Masked Defender uses a pre-trained TinyBERT-based classifier (`masked_defe
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
