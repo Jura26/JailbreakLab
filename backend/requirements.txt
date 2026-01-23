@@ -21,3 +21,5 @@ guardrails-ai>=0.5.10
 huggingface_hub
 pytest
 httpx
+pandas
+matplotlib

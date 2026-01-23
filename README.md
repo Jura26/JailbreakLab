@@ -562,6 +562,17 @@ Info: Pair is currently set to not output any attacks or responses until it fini
 
 Info: Crescendo currently outputs only the last response it got. To see how the model was progressing go to backend/attacks/Crescendo/crescendo.py and uncommenting the labeled yields. Similiar to PAIR, the max new tokens can be changed at the start of the function in generation options as well as how many tries and backtracks it has for better attacking. This all comes at a cost of time and money since this also uses openai gpt-4o as a judge and attacker.
 
+### Masked Defender configuration
+
+Info: Masked Defender uses a pre-trained TinyBERT-based classifier (`masked_defender.pth`) with 0.76M trainable parameters and <50ms inference time. To customize:
+
+- **Adjust threshold:** Modify `is_safe = prob_safe >= prob_unsafe` in `masked_defender.py` to tune sensitivity
+- **Extend max tokens:** Change `max_length=128` in the tokenizer call for longer prompts
+- **Adjust threshold:** Modify `is_safe = prob_safe >= prob_unsafe` in `masked_defender.py` to tune sensitivity
+- **Extend max tokens:** Change `max_length=128` in the tokenizer call for longer prompts
+- **Retrain model:** To fine-tune on custom datasets, prepare labeled examples (safe/unsafe prompts), update the training script in `backend/defenses/MaskedDefender/train.py`, and retrain using standard PyTorch workflows with your domain-specific data
+
+
 ## 📚 References
 
 - [LLM Attacks Catalog](https://llm-attacks.org/)
