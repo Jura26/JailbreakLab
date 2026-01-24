@@ -561,9 +561,6 @@ pytest
 cd frontend
 npm run lint
 ```
-### Role-Playing configuration
-
-Info: 
 
 ### PAIR configuration
 
@@ -601,5 +598,6 @@ Info: Masked Defender uses a pre-trained TinyBERT-based classifier (`masked_defe
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
 
 
