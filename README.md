@@ -561,14 +561,17 @@ pytest
 cd frontend
 npm run lint
 ```
+### Role-Playing configuration
+
+Info: 
 
 ### PAIR configuration
 
-Info: Pair is currently set to not output any attacks or responses until it finishes. By finishing it outputs the best prompt as well as the score that it got. This can be changed by going to backend/attacks/PAIR_attack/main.py and uncommenting the flagged lines. In addition it is set to run 10 parallel streams through 5 iterations. For good responses the original paper suggests as many streams as possible (for example: 20). This can be altered by changing the n_streams and n_iterations variables. Another small note, if you see your target responses being cut off, you can change the call of the apply_defense function by enlarging the max_new_tokens(currently set to 1024 for step by step guides essays etc.). Keep in mind altering all of this directly changes the time needed per response as well as how much you spend on your open_ai_key since PAIR uses gpt-4o for judging and attacking.
+Info: PAIR is currently set to not output any attacks or responses until it finishes. By finishing it outputs the best prompt as well as the score that it got. This can be changed by going to ``backend/attacks/PAIR_attack/main.py`` and uncommenting the flagged lines. In addition it is set to run **10 parallel streams** through **5 iterations**. For good responses the original paper suggests as many streams as possible (for example: 20). This can be altered by changing the ``n_streams`` and ``n_iterations`` variables. Another small note, if you see your target responses being cut off, you can change the call of the ``apply_defense`` function by enlarging the ``max_new_tokens`` (currently set to 1024 for step by step guides essays etc.). Keep in mind altering all of this directly changes the time needed per response as well as how much you spend on your open_ai_key since PAIR uses gpt-4o for judging and attacking.
 
 ### Crescendo configuration
 
-Info: Crescendo currently outputs only the last response it got. To see how the model was progressing go to backend/attacks/Crescendo/crescendo.py and uncommenting the labeled yields. Similiar to PAIR, the max new tokens can be changed at the start of the function in generation options as well as how many tries and backtracks it has for better attacking. This all comes at a cost of time and money since this also uses openai gpt-4o as a judge and attacker.
+Info: Crescendo currently outputs only the last response it got. To see how the model was progressing go to ``backend/attacks/Crescendo/crescendo.py`` and uncommenting the labeled yields. Similiar to PAIR, the max new tokens can be changed at the start of the function in generation options as well as how many tries and backtracks it has for better attacking. This all comes at a cost of time and money since this also uses openai gpt-4o as a judge and attacker.
 
 ### Masked Defender configuration
 
@@ -590,8 +593,13 @@ Info: Masked Defender uses a pre-trained TinyBERT-based classifier (`masked_defe
 - [Prompt Injection Explained](https://simonwillison.net/2023/May/2/prompt-injection-explained/)
 - [Jailbreak Classifier (HuggingFace)](https://huggingface.co/jackhhao/jailbreak-classifier)
 - [Fine-tuned RoBERTa for LLM Toxicity (HuggingFace)](https://huggingface.co/zhx123/ftrobertallm)
+- [ArtPrompti: ACII Art-based Jailbreak Attacks against Aligned LLMs](https://arxiv.org/html/2402.11753v2)
+- [Crescendo](https://crescendo-the-multiturn-jailbreak.github.io//)
+- [Jailbreaking Black Box Large Language Models in Twenty Queries](https://github.com/patrickrchao/JailbreakingLLMs)
+- [NeuroStrike: Neuron-Level Attacks on Aligned LLMs](https://arxiv.org/abs/2509.11864)
 
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
 
