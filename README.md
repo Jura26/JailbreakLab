@@ -10,6 +10,15 @@ A comprehensive framework for testing and demonstrating adversarial attacks and 
 ## Introduction to JailbreakLabs
 This project was developed as part of the Project R course at the Faculty of Electrical Engineering and Computing (FER), University of Zagreb. It is the result of a collaborative effort by a team of motivated and ambitious students under the mentorship of Prof. Stjepan Picek, PhD. The project focuses on creating a software framework for evaluating the security of machine learning models. The student team members are: Ivan Gabrilo, Karlo Kajba Šimanić (Team Lead), Luka Majcen, Timon Menalo, Zvonimir Sučić, Jurica Šlibar, and Luka Uršić.
 
+## 💻 Authors
+  - [Ivan Gabrilo](https://github.com/igabrilo)
+  - [Karlo Kajba Šimanić](https://github.com/karloks2005)
+  - [Luka Majcen](https://github.com/lmajcen196)
+  - [Timon Menalo](https://github.com/Monte481)
+  - [Zvonimir Sučić](https://github.com/ZvonimirSucicFER)
+  - [Jurica Šlibar](https://github.com/Jura26)
+  - [Luka Uršić](https://github.com/Lagano22)
+
 ## Project Description
 JailbreakLabs is a modular, open-source software framework designed for the systematic testing of robustness and security mechanisms in Large Language Models (LLMs). The system enables researchers and development teams to conduct various types of jailbreak attacks — prompt manipulation techniques intended to bypass built-in ethical and safety filters of the models.
 
@@ -580,24 +589,30 @@ Info: Masked Defender uses a pre-trained TinyBERT-based classifier (`masked_defe
 - **Extend max tokens:** Change `max_length=128` in the tokenizer call for longer prompts
 - **Retrain model:** To fine-tune on custom datasets, prepare labeled examples (safe/unsafe prompts), update the training script in `backend/defenses/MaskedDefender/train.py`, and retrain using standard PyTorch workflows with your domain-specific data
 
+## 🧪 Contributions
+
+To learn how to contribute to this project, please refer to our [CONTRIBUTING.md](./CONTRIBUTING.md) guide. We welcome all research, bug reports, and new attack vectors!
 
 ## 📚 References
 
-- [LLM Attacks Catalog](https://llm-attacks.org/)
-- [Universal and Transferable Adversarial Attacks on Aligned Language Models](https://arxiv.org/abs/2307.02483)
-- [Jailbroken: How Does LLM Safety Training Fail?](https://arxiv.org/abs/2302.04237)
-- [OWASP Input Validation Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html)
-- [Prompt Injection Explained](https://simonwillison.net/2023/May/2/prompt-injection-explained/)
-- [Jailbreak Classifier (HuggingFace)](https://huggingface.co/jackhhao/jailbreak-classifier)
-- [Fine-tuned RoBERTa for LLM Toxicity (HuggingFace)](https://huggingface.co/zhx123/ftrobertallm)
-- [ArtPrompti: ACII Art-based Jailbreak Attacks against Aligned LLMs](https://arxiv.org/html/2402.11753v2)
-- [Crescendo](https://crescendo-the-multiturn-jailbreak.github.io//)
-- [Jailbreaking Black Box Large Language Models in Twenty Queries](https://github.com/patrickrchao/JailbreakingLLMs)
-- [NeuroStrike: Neuron-Level Attacks on Aligned LLMs](https://arxiv.org/abs/2509.11864)
+Huge thanks to these papers and projects. Without them, the development of **JailbreakLab** would have been significantly more difficult.
+
+- **[GCG]** [Universal and Transferable Adversarial Attacks on Aligned Language Models](https://arxiv.org/abs/2307.02483)
+- **[Black Box Adversarial Prompting for Foundation Models]** [How Does LLM Safety Training Fail?](https://arxiv.org/abs/2302.04237)
+- **[ArtPrompt]** [ArtPrompt: ASCII Art-based Jailbreak Attacks against Aligned LLMs](https://arxiv.org/html/2402.11753v2)
+- **[NeuroStrike]** [Neuron-Level Attacks on Aligned LLMs](https://arxiv.org/abs/2509.11864)
+- **[TAP]** [Jailbreaking Black Box Large Language Models in Twenty Queries](https://github.com/patrickrchao/JailbreakingLLMs)
+- [LLM Attacks Catalog](https://llm-attacks.org/) - Comprehensive database of adversarial prompts.
+- [**Crescendo**] [Crescendo The Multiturn Jailbreak](https://crescendo-the-multiturn-jailbreak.github.io/) - Multi-turn jailbreak methodology.
+- [Prompt Injection Explained](https://simonwillison.net/2023/May/2/prompt-injection-explained/) - A fundamental guide by Simon Willison.
+- [Jailbreak Classifier (HuggingFace)](https://huggingface.co/jackhhao/jailbreak-classifier) - Pre-trained model for detection.
+- [RoBERTa for LLM Toxicity](https://huggingface.co/zhx123/ftrobertallm) - Fine-tuned toxicity detector.
+- [OWASP Input Validation](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html) - Standard industry practices for input sanitization.
 
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
 
 
 
