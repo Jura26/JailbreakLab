@@ -597,6 +597,7 @@ To learn how to contribute to this project, please refer to our [CONTRIBUTING.md
 
 Huge thanks to these papers and projects. Without them, the development of **JailbreakLab** would have been significantly more difficult.
 
+- **[FCB]** [Fast and Controllable Bias-Guided Jailbreak Attack](https://ieeexplore.ieee.org/document/11126090)
 - **[GCG]** [Universal and Transferable Adversarial Attacks on Aligned Language Models](https://arxiv.org/abs/2307.02483)
 - **[Black Box Adversarial Prompting for Foundation Models]** [How Does LLM Safety Training Fail?](https://arxiv.org/abs/2302.04237)
 - **[ArtPrompt]** [ArtPrompt: ASCII Art-based Jailbreak Attacks against Aligned LLMs](https://arxiv.org/html/2402.11753v2)
@@ -612,6 +613,7 @@ Huge thanks to these papers and projects. Without them, the development of **Jai
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
 
 
 
