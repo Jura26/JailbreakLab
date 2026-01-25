@@ -593,7 +593,6 @@ Info: Masked Defender uses a pre-trained TinyBERT-based classifier (`masked_defe
 
 - **Adjust threshold:** Modify `is_safe = prob_safe >= prob_unsafe` in `masked_defender.py` to tune sensitivity
 - **Extend max tokens:** Change `max_length=128` in the tokenizer call for longer prompts
-- **Adjust threshold:** Modify `is_safe = prob_safe >= prob_unsafe` in `masked_defender.py` to tune sensitivity
 - **Retrain model:** To fine-tune on custom datasets, prepare labeled examples (safe/unsafe prompts), update the training script in `backend/defenses/MaskedDefender/train.py`, and retrain using standard PyTorch workflows with your domain-specific data
 
 ## 🧪 Contributions
@@ -620,6 +619,7 @@ Huge thanks to these papers and projects. Without them, the development of **Jai
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
 
 
 
