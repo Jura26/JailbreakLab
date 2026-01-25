@@ -49,8 +49,47 @@ The primary objectives of this project are:
 - ☸️ **Kubernetes Ready** - K8s manifests for production deployment
 
 ## System Architecture and Technologies
-### Technologies
+
 JailbreakLabs was developed using a wide range of modern technologies. The web interface was built using the widely-used React framework and the TypeScript programming language, ensuring a robust and type-safe frontend. The API layer is powered by the FastAPI framework and the Python programming language.
+
+### Frontend Tech Stack
+
+| Package | Purpose | Short Description |
+| :--- | :--- | :--- |
+| **React 19** | UI Library | Core framework for building a reactive and component-based user interface. |
+| **Vite** | Build Tool | A modern tool that enables extremely fast development server startup and optimization. |
+| **Tailwind CSS** | Styling Framework | Utility-first CSS framework used for modern design and responsiveness without classic CSS. |
+| **Lucide React** | Icons | A library of clean and lightweight vector icons for better visual navigation. |
+| **Recharts** | Data Visualization | React-based library for displaying experiment results through interactive charts. |
+| **TypeScript** | Type Safety | JavaScript superset with static typing, reducing errors and improving maintainability. |
+
+### Backend Tech Stack
+
+| Package | Purpose | Short Description |
+| :--- | :--- | :--- |
+| **fastapi** | Web Framework | Enables rapid API building for system communication. |
+| **uvicorn[standard]** | ASGI Server | High-performance server for running the FastAPI application. |
+| **pydantic** | Data Validation | Ensures input and output data (e.g., JSON) follow the correct types and formats. |
+| **torch (PyTorch)** | Deep Learning | The foundation for running and working with machine learning models. |
+| **numpy** | Numerical Processing | Used for array manipulation and mathematical operations on data. |
+| **transformers** | Hugging Face | Main library for working with modern LLMs (BERT, GPT, Llama). |
+| **langchain-huggingface**| Integration | Connects Hugging Face models with LangChain for easier development. |
+| **langchain-core** | Core Abstractions | Basic components for building LLM chains and managing prompts. |
+| **nltk** | Text Processing | Tool for tokenization, cleaning, and natural language analysis. |
+| **accelerate** | Optimization | Facilitates training and running models across different hardware (GPU/CPU). |
+| **bitsandbytes** | Quantization | Enables running large models with less VRAM (e.g., 8-bit or 4-bit mode). |
+| **redis** | In-memory DB | Used for temporary data storage, caching, or as a message broker. |
+| **pyfiglet** | Visual Identity | Generates ASCII art headers in the terminal for CLI interfaces. |
+| **tqdm** | Progress Indicator | Adds visual progress bars to the terminal for long-running processes. |
+| **supabase** | Database & Backend | Provides cloud storage for experiment results and user management. |
+| **python-dotenv** | Configuration | Securely loads API keys and environment variables from a .env file. |
+| **openai** | OpenAI API Client | Official library for communication with GPT-4 and similar models. |
+| **scipy** | Scientific Computing | Used for advanced statistical calculations and result analysis. |
+| **fastchat** | Chatbot Platform | Tool for training, serving, and evaluating chat-based LLMs. |
+| **guardrails-ai** | Safety Frameworks | Adds protective layers to model outputs to prevent harmful content. |
+| **huggingface_hub** | Model Access | Allows downloading models directly from the Hugging Face repository. |
+| **pytest** | Testing | Framework for writing and executing automated tests for your code. |
+| **httpx** | HTTP Client | Modern library for asynchronous HTTP requests (useful for API calls). |
 
 To manage and load various AI models, we utilized the highly popular Hugging Face model hub along with its associated integration packages. For model loading and real-time interaction, the PyTorch framework serves as a critical component, supported by essential libraries such as numpy, transformers, and others (refer to the table below for a detailed overview of all utilized technologies).
 
@@ -619,6 +658,7 @@ Huge thanks to these papers and projects. Without them, the development of **Jai
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
 
 
 
