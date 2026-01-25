@@ -579,6 +579,14 @@ Info: PAIR is currently set to not output any attacks or responses until it fini
 
 Info: Crescendo currently outputs only the last response it got. To see how the model was progressing go to ``backend/attacks/Crescendo/crescendo.py`` and uncommenting the labeled yields. Similiar to PAIR, the max new tokens can be changed at the start of the function in generation options as well as how many tries and backtracks it has for better attacking. This all comes at a cost of time and money since this also uses openai gpt-4o as a judge and attacker.
 
+### TAP configuration
+
+Info: TAP (Tree of Attacks with Pruning) is configured by default to run with **width=10** (maximum number of prompts to keep after pruning), **depth=10** (maximum tree depth/iterations), and **branching_factor=4** (number of variations generated per prompt). These parameters can be modified in ``backend/attacks/TAP.py`` in the ``run_tap_attack`` function. The attack generates multiple adversarial prompt variations, evaluates them using scoring, and prunes low-performing candidates to focus on the most promising attack paths. Increasing width and depth will improve attack success rates but significantly increases execution time and OpenAI API costs, as TAP uses GPT-4o for both adversarial prompt generation and response evaluation. For faster testing, reduce width and depth to smaller values (e.g., width=5, depth=5). For more aggressive attacks, increase these values along with ``branching_factor``.
+
+### FCB (Fast and Controllable Bias-Guided) configuration
+
+Info: FCB is configured by default with **prompt_length=35** (length of the adversarial suffix), **iterations=10** (number of optimization steps), and various energy function weights (**alpha1=0.05**, **alpha2=4.0**, **alpha3=1.5**, **omega=6.0**). These parameters can be adjusted in ``backend/attacks/FCB.py`` in the ``run_fcb_attack`` function. The attack uses gradient-based optimization to generate adversarial suffixes guided by a bias towards compliance-inducing keywords. To improve attack success: 1) Increase **iterations** (e.g., 15-20) for more refined optimization, 2) Adjust **prompt_length** (longer prompts may be more effective but slower), 3) Tune the **alpha** weights to balance different components of the energy function (alpha1 for embedding similarity, alpha2 for stop-word penalty, alpha3 for diversity), 4) Modify **omega** to control bias strength toward keywords, and 5) Extend the **keywords list** with domain-specific terms that encourage model compliance. Higher iterations and longer prompts increase GPU memory usage and execution time. The attack outputs the best jailbreak prompt found across all optimization attempts.
+
 ### Masked Defender configuration
 
 Info: Masked Defender uses a pre-trained TinyBERT-based classifier (`masked_defender.pth`) with 0.76M trainable parameters and <50ms inference time. To customize:
@@ -586,7 +594,6 @@ Info: Masked Defender uses a pre-trained TinyBERT-based classifier (`masked_defe
 - **Adjust threshold:** Modify `is_safe = prob_safe >= prob_unsafe` in `masked_defender.py` to tune sensitivity
 - **Extend max tokens:** Change `max_length=128` in the tokenizer call for longer prompts
 - **Adjust threshold:** Modify `is_safe = prob_safe >= prob_unsafe` in `masked_defender.py` to tune sensitivity
-- **Extend max tokens:** Change `max_length=128` in the tokenizer call for longer prompts
 - **Retrain model:** To fine-tune on custom datasets, prepare labeled examples (safe/unsafe prompts), update the training script in `backend/defenses/MaskedDefender/train.py`, and retrain using standard PyTorch workflows with your domain-specific data
 
 ## 🧪 Contributions

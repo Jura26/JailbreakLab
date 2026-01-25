@@ -7,8 +7,8 @@ from torch import nn
 from transformers import AutoTokenizer, AutoModel
 
 
-CHECKPOINT_NAME = "masked_defender.pth"
-
+CHECKPOINT_NAME = "masked_defender.pth"  # Change this to your actual file name that represents your trained model
+                                         # It is by default set to our provided model file
 
 class MaskedDefenderClassifier(nn.Module):
     """Classifier matching the architecture used in Colab training.
