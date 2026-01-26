@@ -205,7 +205,7 @@ def get_model_and_tokenizer(model_id: str, device: str = "cpu"):
         # Load or reuse model
         model = AutoModelForCausalLM.from_pretrained(
             model_id,
-            dtype=dtype,
+            torch_dtype=dtype,
             device_map="auto" if (device == "cuda" and torch.cuda.is_available()) else None,
         )
         print(f"✅ DEBUG: Model {model_id} loaded successfully.")
@@ -249,7 +249,7 @@ async def _generate_and_stream(tokenizer, model, prompt: str, generation_options
             input_len = int(input_ids.shape[1]) if input_ids is not None else 0
 
             # Compute max_new_tokens safely
-            requested_new = int(generation_options.get("max_new_tokens", 128))
+            requested_new = int(generation_options.get("max_new_tokens", 256))
             max_new_tokens = max(1, min(requested_new, int(max_pos) - max(1, input_len)))
 
             gen_kwargs = {

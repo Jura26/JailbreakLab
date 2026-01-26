@@ -26,6 +26,6 @@ spec:
       spec:
          containers:
             - name: frontend
-              image: europe-central2-docker.pkg.dev/nomadic-memento-476510-h5/projektr/frontend:latest
+              image: europe-central2-docker.pkg.dev/project-08c27df1-3ba2-4f20-b56/projektr/frontend:latest
               ports:
                  - containerPort: 80

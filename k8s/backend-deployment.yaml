@@ -25,7 +25,7 @@ spec:
             app: backend
       spec:
          nodeSelector:
-            accelerator: nvidia-l4
+            accelerator: nvidia-t4
          tolerations:
             - key: "nvidia.com/gpu"
               operator: "Equal"
@@ -33,7 +33,7 @@ spec:
               effect: "NoSchedule"
          containers:
             - name: backend
-              image: europe-central2-docker.pkg.dev/nomadic-memento-476510-h5/projektr/backend:latest
+              image: europe-central2-docker.pkg.dev/project-08c27df1-3ba2-4f20-b56/projektr/backend:latest
               ports:
                  - containerPort: 8000
               env:

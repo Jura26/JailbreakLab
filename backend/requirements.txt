@@ -17,10 +17,11 @@ python-dotenv
 openai>=1.0.0
 scipy
 fastchat
-guardrails-ai>=0.5.10
+guardrails-ai <=0.7.2    
 huggingface_hub
 pytest
 httpx
 pandas
 matplotlib
 nanogcg
+rich ==14.0.0

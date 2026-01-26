@@ -308,13 +308,9 @@ export default function StatisticsCharts({
                   <div className="flex justify-between items-center p-3 bg-[#252532] rounded-lg">
                      <span className="text-[#94a3b8]">Delta</span>
                      <span
-                        className={`font-bold ${
-                           defenseBypassData.delta > 0
-                              ? "text-[#ef4444]"
-                              : "text-[#10b981]"
-                        }`}
+                        className={`font-bold ${(defenseBypassData.delta ?? 0) > 0 ? "text-[#ef4444]" : "text-[#10b981]"}`}
                      >
-                        {defenseBypassData.delta?.toFixed(1) || 0}%
+                        {(defenseBypassData.delta ?? 0).toFixed(1)}%
                      </span>
                   </div>
                </div>
