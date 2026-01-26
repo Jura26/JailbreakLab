@@ -1,3 +1,7 @@
+<img width="1178" height="130" alt="image" src="https://github.com/user-attachments/assets/1f5e98be-3bf8-4fa2-be63-95f205937a4c" />
+
+
+
 # JailbreakLab - Test AI Model Vulnerabilities With Various Attack And Defense Mechanisms
 
 A comprehensive framework for testing and demonstrating adversarial attacks and defense mechanisms against Large Language Models (LLMs). This project provides an interactive web interface to experiment with various jailbreak attack techniques and evaluate different defense strategies in real-time.
@@ -22,7 +26,13 @@ This project was developed as part of the Project R course at the Faculty of Ele
 ## Project Description
 JailbreakLabs is a modular, open-source software framework designed for the systematic testing of robustness and security mechanisms in Large Language Models (LLMs). The system enables researchers and development teams to conduct various types of jailbreak attacks — prompt manipulation techniques intended to bypass built-in ethical and safety filters of the models.
 
+<img width="1912" height="928" alt="image" src="https://github.com/user-attachments/assets/f38cbd63-6770-4c34-8672-322e3be699a1" />
+
 Through a unified interface, JailbreakLabs integrates diverse attack methodologies (such as adversarial prompts and social engineering techniques) and provides tools for response evaluation. This allows for the precise measurement of the Attack Success Rate (ASR) across different models, alongside other metrics integrated within the solution.
+
+<img width="1914" height="930" alt="image" src="https://github.com/user-attachments/assets/f13fa45d-df7e-455a-9722-9e75c88b6f58" />
+<img width="1914" height="930" alt="image" src="https://github.com/user-attachments/assets/a1ba3e96-eb1e-4324-a2f7-325d59c5dfb0" />
+
 
 ## Motivation
 The rapid development and integration of LLMs into everyday applications carry inherent risks, such as the generation of harmful content, leakage of private data, or the provision of dangerous instructions. Although model developers employ various techniques like RLHF (Reinforcement Learning from Human Feedback) to ensure the alignment of models with human values, these defense mechanisms have frequently proven vulnerable to both creative and automated attacks.
@@ -180,6 +190,56 @@ The framework supports various HuggingFace models:
 | OPT-13B      | 13B        | ~32 GB        |
 | Mistral-7B   | 7B         | ~12 GB        |
 | LLaMA 2-7B   | 7B         | ~14 GB        |
+
+### Adding New Models
+
+To add a new model from [HugginFace](https://huggingface.co/), go to ``frontend/src/components/models.tsx`` and look for:
+```ts
+const models: ModelInfo[] = ...
+```
+See how other models are added to the list. Add new one accordingly. Here's an example of how a mistral's 7B parameter model was added.
+```ts
+{
+    id: "mistralai/Mistral-7B-Instruct-v0.2",
+    name: "Mistral-7B",
+    description: "Needs ~12 GB VRAM",
+}
+```
+> [!IMPORTANT]
+> Make sure the model's id is the same as on HuggingFace website
+
+## Metrics
+
+JailbreakLab implements different kinds of metrics. JailbreakLab helps you calculate and displays the following metrics:
+  - Total number of tests
+  - Success rate
+  - Overall ASR (attack success rate)
+  - Best attack
+  - Best defense
+  - Defense bypass percentage
+  - Refusal rate
+  - Block rate
+  - Median time
+  - Tool misuse percentage
+  - Data leakage
+  - Tool misuse count
+  - Success rate by defense type
+  - Success rate by model type
+  - Attack success rate by attack type
+  - Defense bypass analysis (bypass rate, baseline ASR, delta)
+  - Query budget metrics (median queries, median tokens, median time)
+  - Refusal & safety metrics (refusal rate, safe completion rate, over-refusal rate)
+
+<img width="1800" height="359" alt="image" src="https://github.com/user-attachments/assets/71395f65-5088-4e2e-8c79-032a38124239" />
+<img width="1800" height="736" alt="image" src="https://github.com/user-attachments/assets/cd02b33b-489d-4241-998d-479057436964" />
+<img width="1800" height="637" alt="image" src="https://github.com/user-attachments/assets/b067c233-34ff-4b4c-8bf3-d8522e7e76ab" />
+
+### Adding New Metrics
+
+To understand how metrics are added to ``backend/database.py``. We recommend following our work when adding new metrics.
+
+> [!NOTE]
+> There is not a single correct way to add new metrics, but we recommend following our work flow. 
 
 ## 🕵️ Detection & Evaluation
 
@@ -658,6 +718,7 @@ Huge thanks to these papers and projects. Without them, the development of **Jai
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
 
 
 
