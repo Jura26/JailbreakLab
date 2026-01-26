@@ -195,6 +195,25 @@ async def prompt_stream(request: PromptRequest):
                     clear_history(session_id_to_clear)
                 except Exception as e:
                     print(f"Error clearing history for {session_id_to_clear}: {e}")
+            try:
+                from model import _MODEL_CACHE
+                keys_to_delete = list(_MODEL_CACHE.keys())
+
+
+                for key in keys_to_delete:
+                    _, model = _MODEL_CACHE.pop(key)
+                    del model
+
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+
+
+                print("DEBUG: GPU memory freed after full attack run\n")
+
+
+            except Exception as e:
+                print(f"GPU cleanup failed after attack: {e} \n")
 
     # Handle attacks
     if request.attack != "none":
@@ -320,6 +339,25 @@ async def prompt_stream(request: PromptRequest):
                     clear_history(session_id)
                 except Exception as e:
                     print(f"Error clearing history for {session_id}: {e}")
+                try:
+                    from model import _MODEL_CACHE
+                    keys_to_delete = list(_MODEL_CACHE.keys())
+
+
+                    for key in keys_to_delete:
+                        _, model = _MODEL_CACHE.pop(key)
+                        del model
+
+
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+
+
+                    print("DEBUG: GPU memory freed after full attack run\n")
+
+
+                except Exception as e:
+                    print(f"GPU cleanup failed after attack: {e} \n")
             
             # Log failed cases
             if not logged_to_db:
