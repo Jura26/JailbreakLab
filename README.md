@@ -11,7 +11,7 @@ A comprehensive framework for testing and demonstrating adversarial attacks and 
 ![React](https://img.shields.io/badge/react-19.x-61dafb.svg)
 ![Docker](https://img.shields.io/badge/docker-compose-2496ed.svg)
 
-## Introduction to JailbreakLabs
+## Introduction to JailbreakLab
 This project was developed as part of the Project R course at the Faculty of Electrical Engineering and Computing (FER), University of Zagreb. It is the result of a collaborative effort by a team of motivated and ambitious students under the mentorship of Prof. Stjepan Picek, PhD. The project focuses on creating a software framework for evaluating the security of machine learning models. The student team members are: Ivan Gabrilo, Karlo Kajba Šimanić (Team Lead), Luka Majcen, Timon Menalo, Zvonimir Sučić, Jurica Šlibar, and Luka Uršić.
 
 ## 💻 Authors
@@ -24,11 +24,11 @@ This project was developed as part of the Project R course at the Faculty of Ele
   - [Luka Uršić](https://github.com/Lagano22)
 
 ## Project Description
-JailbreakLabs is a modular, open-source software framework designed for the systematic testing of robustness and security mechanisms in Large Language Models (LLMs). The system enables researchers and development teams to conduct various types of jailbreak attacks — prompt manipulation techniques intended to bypass built-in ethical and safety filters of the models.
+JailbreakLab is a modular, open-source software framework designed for the systematic testing of robustness and security mechanisms in Large Language Models (LLMs). The system enables researchers and development teams to conduct various types of jailbreak attacks — prompt manipulation techniques intended to bypass built-in ethical and safety filters of the models.
 
 <img width="1912" height="928" alt="image" src="https://github.com/user-attachments/assets/f38cbd63-6770-4c34-8672-322e3be699a1" />
 
-Through a unified interface, JailbreakLabs integrates diverse attack methodologies (such as adversarial prompts and social engineering techniques) and provides tools for response evaluation. This allows for the precise measurement of the Attack Success Rate (ASR) across different models, alongside other metrics integrated within the solution.
+Through a unified interface, JailbreakLab integrates diverse attack methodologies (such as adversarial prompts and social engineering techniques) and provides tools for response evaluation. This allows for the precise measurement of the Attack Success Rate (ASR) across different models, alongside other metrics integrated within the solution.
 
 <img width="1914" height="930" alt="image" src="https://github.com/user-attachments/assets/f13fa45d-df7e-455a-9722-9e75c88b6f58" />
 <img width="1914" height="930" alt="image" src="https://github.com/user-attachments/assets/a1ba3e96-eb1e-4324-a2f7-325d59c5dfb0" />
@@ -37,7 +37,7 @@ Through a unified interface, JailbreakLabs integrates diverse attack methodologi
 ## Motivation
 The rapid development and integration of LLMs into everyday applications carry inherent risks, such as the generation of harmful content, leakage of private data, or the provision of dangerous instructions. Although model developers employ various techniques like RLHF (Reinforcement Learning from Human Feedback) to ensure the alignment of models with human values, these defense mechanisms have frequently proven vulnerable to both creative and automated attacks.
 
-The motivation behind this project stems from the need for a standardized tool that facilitates red-teaming processes. Instead of ad-hoc testing, JailbreakLabs offers a structured approach to identifying vulnerabilities, thereby directly contributing to the development of more secure and reliable artificial intelligence systems.
+The motivation behind this project stems from the need for a standardized tool that facilitates red-teaming processes. Instead of ad-hoc testing, JailbreakLab offers a structured approach to identifying vulnerabilities, thereby directly contributing to the development of more secure and reliable artificial intelligence systems.
 
 ## Objectives
 The primary objectives of this project are:
@@ -60,7 +60,7 @@ The primary objectives of this project are:
 
 ## System Architecture and Technologies
 
-JailbreakLabs was developed using a wide range of modern technologies. The web interface was built using the widely-used React framework and the TypeScript programming language, ensuring a robust and type-safe frontend. The API layer is powered by the FastAPI framework and the Python programming language.
+JailbreakLab was developed using a wide range of modern technologies. The web interface was built using the widely-used React framework and the TypeScript programming language, ensuring a robust and type-safe frontend. The API layer is powered by the FastAPI framework and the Python programming language.
 
 ### Frontend Tech Stack
 
@@ -718,6 +718,7 @@ Huge thanks to these papers and projects. Without them, the development of **Jai
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
+
 
 
 
