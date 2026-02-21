@@ -1,7 +1,5 @@
 <img width="1178" height="130" alt="image" src="https://github.com/user-attachments/assets/1f5e98be-3bf8-4fa2-be63-95f205937a4c" />
 
-
-
 # JailbreakLab - Test AI Model Vulnerabilities With Various Attack And Defense Mechanisms
 
 A comprehensive framework for testing and demonstrating adversarial attacks and defense mechanisms against Large Language Models (LLMs). This project provides an interactive web interface to experiment with various jailbreak attack techniques and evaluate different defense strategies in real-time.
@@ -12,18 +10,51 @@ A comprehensive framework for testing and demonstrating adversarial attacks and 
 ![Docker](https://img.shields.io/badge/docker-compose-2496ed.svg)
 
 ## Introduction to JailbreakLab
+
 This project was developed as part of the Project R course at the Faculty of Electrical Engineering and Computing (FER), University of Zagreb. It is the result of a collaborative effort by a team of motivated and ambitious students under the mentorship of Prof. Stjepan Picek, PhD. The project focuses on creating a software framework for evaluating the security of machine learning models. The student team members are: Ivan Gabrilo, Karlo Kajba Šimanić (Team Lead), Luka Majcen, Timon Menalo, Zvonimir Sučić, Jurica Šlibar, and Luka Uršić.
 
 ## 💻 Authors
-  - [Ivan Gabrilo](https://github.com/igabrilo)
-  - [Karlo Kajba Šimanić](https://github.com/karloks2005)
-  - [Luka Majcen](https://github.com/lmajcen196)
-  - [Timon Menalo](https://github.com/Monte481)
-  - [Zvonimir Sučić](https://github.com/ZvonimirSucicFER)
-  - [Jurica Šlibar](https://github.com/Jura26)
-  - [Luka Uršić](https://github.com/Lagano22)
+
+- [Ivan Gabrilo](https://github.com/igabrilo)
+- [Karlo Kajba Šimanić](https://github.com/karloks2005)
+- [Luka Majcen](https://github.com/lmajcen196)
+- [Timon Menalo](https://github.com/Monte481)
+- [Zvonimir Sučić](https://github.com/ZvonimirSucicFER)
+- [Jurica Šlibar](https://github.com/Jura26)
+- [Luka Uršić](https://github.com/Lagano22)
+
+### 🌟 Highlighted Contributions: Jurica Šlibar
+
+_(Note: This section details specific contributions for portfolio and CV reference)_
+
+**System Architecture & Core Engineering**
+
+- **Pipeline Architecture:** Architected the core execution pipeline, establishing the foundational `attack_manager.py` and `defense_manager.py`. This modular design pattern allows for the seamless and scalable integration of new adversarial techniques and defense mechanisms.
+- **Full-Stack Integration:** Engineered the critical backend-frontend connection, ensuring reliable real-time data streaming, state management, and API communication between the React interface and the FastAPI backend.
+
+**Frontend Development & UI/UX**
+
+- **Frontend Leadership:** Led the development of the interactive React-based user interface. While collaborating closely with two other team members who provided valuable frontend contributions, took responsibility for the majority of the frontend architecture, component design, and overall user experience.
+- **Data Visualization:** Designed and implemented the comprehensive statistics and metrics dashboard (`StatisticsView.tsx`), enabling real-time, interactive visualization of complex evaluation metrics.
+
+**Database & Analytics Engineering**
+
+- **Schema Expansion:** Built upon the foundational database structure created by a teammate, significantly expanding the schema to capture a much wider array of telemetry, execution data, and session history.
+- **Advanced Metrics:** Engineered the advanced metrics calculation system, allowing the framework to track, store, and display deep insights such as query budgets, refusal rates, defense bypass percentages, and tool misuse statistics.
+
+**DevOps & Cloud Deployment**
+
+- **Kubernetes Orchestration:** Spearheaded the container orchestration and cloud deployment strategy by developing the complete suite of Kubernetes (K8s) manifests (`backend-deployment.yaml`, `frontend-deployment.yaml`, `redis-deployment.yaml`).
+- **GKE Integration:** Configured the deployment pipelines for Google Kubernetes Engine (GKE), ensuring the application scales efficiently and reliably with GPU support in a production environment.
+- **Automated Testing:** Developed the comprehensive test suite (`test_database.py`, `test_main.py`, `test_model.py`) using `pytest`, ensuring the reliability and stability of the backend API, database interactions, and model inference logic.
+
+**Security Research (Attacks & Defenses)**
+
+- **Adversarial Attacks:** Researched and implemented multiple complex jailbreak vectors. This includes the cutting-edge **NeuroStrike** attack, the complete suite of **DAN (Do Anything Now)** prompts (including V6, V9, and V11), **Mongo Tom**, and **STAN**. Additionally, co-developed the gradient-based **FCB (Fast and Controllable Bias-Guided)** attack.
+- **Defense Mechanisms:** Implemented the **System Prompt Hardening** defense to fortify models against adversarial instructions, and co-developed the neural **MaskedDefender** mechanism, contributing to its integration and evaluation logic.
 
 ## Project Description
+
 JailbreakLab is a modular, open-source software framework designed for the systematic testing of robustness and security mechanisms in Large Language Models (LLMs). The system enables researchers and development teams to conduct various types of jailbreak attacks — prompt manipulation techniques intended to bypass built-in ethical and safety filters of the models.
 
 <img width="1912" height="928" alt="image" src="https://github.com/user-attachments/assets/f38cbd63-6770-4c34-8672-322e3be699a1" />
@@ -33,19 +64,21 @@ Through a unified interface, JailbreakLab integrates diverse attack methodologie
 <img width="1914" height="930" alt="image" src="https://github.com/user-attachments/assets/f13fa45d-df7e-455a-9722-9e75c88b6f58" />
 <img width="1914" height="930" alt="image" src="https://github.com/user-attachments/assets/a1ba3e96-eb1e-4324-a2f7-325d59c5dfb0" />
 
-
 ## Motivation
+
 The rapid development and integration of LLMs into everyday applications carry inherent risks, such as the generation of harmful content, leakage of private data, or the provision of dangerous instructions. Although model developers employ various techniques like RLHF (Reinforcement Learning from Human Feedback) to ensure the alignment of models with human values, these defense mechanisms have frequently proven vulnerable to both creative and automated attacks.
 
 The motivation behind this project stems from the need for a standardized tool that facilitates red-teaming processes. Instead of ad-hoc testing, JailbreakLab offers a structured approach to identifying vulnerabilities, thereby directly contributing to the development of more secure and reliable artificial intelligence systems.
 
 ## Objectives
-The primary objectives of this project are:
-  - Development of a Modular Solution – Building a system that allows for the simple implementation of new attack types and defense methods, while providing comprehensive metric
-    insights to ensure a deep understanding of experimental results.
 
-  - Knowledge Expansion – As a team of ambitious and motivated students, we believe that the security of artificial intelligence is just as important as its development. We
-    consider the existence of robust tools for conducting security experiments on LLMs to be vital for the future of the field.
+The primary objectives of this project are:
+
+- Development of a Modular Solution – Building a system that allows for the simple implementation of new attack types and defense methods, while providing comprehensive metric
+  insights to ensure a deep understanding of experimental results.
+
+- Knowledge Expansion – As a team of ambitious and motivated students, we believe that the security of artificial intelligence is just as important as its development. We
+  consider the existence of robust tools for conducting security experiments on LLMs to be vital for the future of the field.
 
 ### ✨ Features
 
@@ -64,51 +97,52 @@ JailbreakLab was developed using a wide range of modern technologies. The web in
 
 ### Frontend Tech Stack
 
-| Package | Purpose | Short Description |
-| :--- | :--- | :--- |
-| **React 19** | UI Library | Core framework for building a reactive and component-based user interface. |
-| **Vite** | Build Tool | A modern tool that enables extremely fast development server startup and optimization. |
-| **Tailwind CSS** | Styling Framework | Utility-first CSS framework used for modern design and responsiveness without classic CSS. |
-| **Lucide React** | Icons | A library of clean and lightweight vector icons for better visual navigation. |
-| **Recharts** | Data Visualization | React-based library for displaying experiment results through interactive charts. |
-| **TypeScript** | Type Safety | JavaScript superset with static typing, reducing errors and improving maintainability. |
+| Package          | Purpose            | Short Description                                                                          |
+| :--------------- | :----------------- | :----------------------------------------------------------------------------------------- |
+| **React 19**     | UI Library         | Core framework for building a reactive and component-based user interface.                 |
+| **Vite**         | Build Tool         | A modern tool that enables extremely fast development server startup and optimization.     |
+| **Tailwind CSS** | Styling Framework  | Utility-first CSS framework used for modern design and responsiveness without classic CSS. |
+| **Lucide React** | Icons              | A library of clean and lightweight vector icons for better visual navigation.              |
+| **Recharts**     | Data Visualization | React-based library for displaying experiment results through interactive charts.          |
+| **TypeScript**   | Type Safety        | JavaScript superset with static typing, reducing errors and improving maintainability.     |
 
 ### Backend Tech Stack
 
-| Package | Purpose | Short Description |
-| :--- | :--- | :--- |
-| **fastapi** | Web Framework | Enables rapid API building for system communication. |
-| **uvicorn[standard]** | ASGI Server | High-performance server for running the FastAPI application. |
-| **pydantic** | Data Validation | Ensures input and output data (e.g., JSON) follow the correct types and formats. |
-| **torch (PyTorch)** | Deep Learning | The foundation for running and working with machine learning models. |
-| **numpy** | Numerical Processing | Used for array manipulation and mathematical operations on data. |
-| **transformers** | Hugging Face | Main library for working with modern LLMs (BERT, GPT, Llama). |
-| **langchain-huggingface**| Integration | Connects Hugging Face models with LangChain for easier development. |
-| **langchain-core** | Core Abstractions | Basic components for building LLM chains and managing prompts. |
-| **nltk** | Text Processing | Tool for tokenization, cleaning, and natural language analysis. |
-| **accelerate** | Optimization | Facilitates training and running models across different hardware (GPU/CPU). |
-| **bitsandbytes** | Quantization | Enables running large models with less VRAM (e.g., 8-bit or 4-bit mode). |
-| **redis** | In-memory DB | Used for temporary data storage, caching, or as a message broker. |
-| **pyfiglet** | Visual Identity | Generates ASCII art headers in the terminal for CLI interfaces. |
-| **tqdm** | Progress Indicator | Adds visual progress bars to the terminal for long-running processes. |
-| **supabase** | Database & Backend | Provides cloud storage for experiment results and user management. |
-| **python-dotenv** | Configuration | Securely loads API keys and environment variables from a .env file. |
-| **openai** | OpenAI API Client | Official library for communication with GPT-4 and similar models. |
-| **scipy** | Scientific Computing | Used for advanced statistical calculations and result analysis. |
-| **fastchat** | Chatbot Platform | Tool for training, serving, and evaluating chat-based LLMs. |
-| **guardrails-ai** | Safety Frameworks | Adds protective layers to model outputs to prevent harmful content. |
-| **huggingface_hub** | Model Access | Allows downloading models directly from the Hugging Face repository. |
-| **pytest** | Testing | Framework for writing and executing automated tests for your code. |
-| **httpx** | HTTP Client | Modern library for asynchronous HTTP requests (useful for API calls). |
+| Package                   | Purpose              | Short Description                                                                |
+| :------------------------ | :------------------- | :------------------------------------------------------------------------------- |
+| **fastapi**               | Web Framework        | Enables rapid API building for system communication.                             |
+| **uvicorn[standard]**     | ASGI Server          | High-performance server for running the FastAPI application.                     |
+| **pydantic**              | Data Validation      | Ensures input and output data (e.g., JSON) follow the correct types and formats. |
+| **torch (PyTorch)**       | Deep Learning        | The foundation for running and working with machine learning models.             |
+| **numpy**                 | Numerical Processing | Used for array manipulation and mathematical operations on data.                 |
+| **transformers**          | Hugging Face         | Main library for working with modern LLMs (BERT, GPT, Llama).                    |
+| **langchain-huggingface** | Integration          | Connects Hugging Face models with LangChain for easier development.              |
+| **langchain-core**        | Core Abstractions    | Basic components for building LLM chains and managing prompts.                   |
+| **nltk**                  | Text Processing      | Tool for tokenization, cleaning, and natural language analysis.                  |
+| **accelerate**            | Optimization         | Facilitates training and running models across different hardware (GPU/CPU).     |
+| **bitsandbytes**          | Quantization         | Enables running large models with less VRAM (e.g., 8-bit or 4-bit mode).         |
+| **redis**                 | In-memory DB         | Used for temporary data storage, caching, or as a message broker.                |
+| **pyfiglet**              | Visual Identity      | Generates ASCII art headers in the terminal for CLI interfaces.                  |
+| **tqdm**                  | Progress Indicator   | Adds visual progress bars to the terminal for long-running processes.            |
+| **supabase**              | Database & Backend   | Provides cloud storage for experiment results and user management.               |
+| **python-dotenv**         | Configuration        | Securely loads API keys and environment variables from a .env file.              |
+| **openai**                | OpenAI API Client    | Official library for communication with GPT-4 and similar models.                |
+| **scipy**                 | Scientific Computing | Used for advanced statistical calculations and result analysis.                  |
+| **fastchat**              | Chatbot Platform     | Tool for training, serving, and evaluating chat-based LLMs.                      |
+| **guardrails-ai**         | Safety Frameworks    | Adds protective layers to model outputs to prevent harmful content.              |
+| **huggingface_hub**       | Model Access         | Allows downloading models directly from the Hugging Face repository.             |
+| **pytest**                | Testing              | Framework for writing and executing automated tests for your code.               |
+| **httpx**                 | HTTP Client          | Modern library for asynchronous HTTP requests (useful for API calls).            |
 
 To manage and load various AI models, we utilized the highly popular Hugging Face model hub along with its associated integration packages. For model loading and real-time interaction, the PyTorch framework serves as a critical component, supported by essential libraries such as numpy, transformers, and others (refer to the table below for a detailed overview of all utilized technologies).
 
 Data Flow Description:
-  - **User Interaction**: The user defines attack parameters via the React interface.
-  - **Request Handling**: FastAPI receives the request and, through the ModelWrapper component, initializes the selected LLM (either locally via transformers or through an API).
-  - **Attack Execution**: The Attack Module executes the selected jailbreak technique while simultaneously applying the chosen defense method.
-  - **Evaluation**: The model's generated response is processed by the Evaluator (utilizing guardrails-ai or nltk).
-  - **Persistence & Visualization**: Results are stored in the Supabase database, and visual representations are generated using the recharts library.
+
+- **User Interaction**: The user defines attack parameters via the React interface.
+- **Request Handling**: FastAPI receives the request and, through the ModelWrapper component, initializes the selected LLM (either locally via transformers or through an API).
+- **Attack Execution**: The Attack Module executes the selected jailbreak technique while simultaneously applying the chosen defense method.
+- **Evaluation**: The model's generated response is processed by the Evaluator (utilizing guardrails-ai or nltk).
+- **Persistence & Visualization**: Results are stored in the Supabase database, and visual representations are generated using the recharts library.
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -193,11 +227,14 @@ The framework supports various HuggingFace models:
 
 ### Adding New Models
 
-To add a new model from [HugginFace](https://huggingface.co/), go to ``frontend/src/components/models.tsx`` and look for:
+To add a new model from [HugginFace](https://huggingface.co/), go to `frontend/src/components/models.tsx` and look for:
+
 ```ts
 const models: ModelInfo[] = ...
 ```
+
 See how other models are added to the list. Add new one accordingly. Here's an example of how a mistral's 7B parameter model was added.
+
 ```ts
 {
     id: "mistralai/Mistral-7B-Instruct-v0.2",
@@ -205,30 +242,32 @@ See how other models are added to the list. Add new one accordingly. Here's an e
     description: "Needs ~12 GB VRAM",
 }
 ```
+
 > [!IMPORTANT]
 > Make sure the model's id is the same as on HuggingFace website
 
 ## Metrics
 
 JailbreakLab implements different kinds of metrics. JailbreakLab helps you calculate and displays the following metrics:
-  - Total number of tests
-  - Success rate
-  - Overall ASR (attack success rate)
-  - Best attack
-  - Best defense
-  - Defense bypass percentage
-  - Refusal rate
-  - Block rate
-  - Median time
-  - Tool misuse percentage
-  - Data leakage
-  - Tool misuse count
-  - Success rate by defense type
-  - Success rate by model type
-  - Attack success rate by attack type
-  - Defense bypass analysis (bypass rate, baseline ASR, delta)
-  - Query budget metrics (median queries, median tokens, median time)
-  - Refusal & safety metrics (refusal rate, safe completion rate, over-refusal rate)
+
+- Total number of tests
+- Success rate
+- Overall ASR (attack success rate)
+- Best attack
+- Best defense
+- Defense bypass percentage
+- Refusal rate
+- Block rate
+- Median time
+- Tool misuse percentage
+- Data leakage
+- Tool misuse count
+- Success rate by defense type
+- Success rate by model type
+- Attack success rate by attack type
+- Defense bypass analysis (bypass rate, baseline ASR, delta)
+- Query budget metrics (median queries, median tokens, median time)
+- Refusal & safety metrics (refusal rate, safe completion rate, over-refusal rate)
 
 <img width="1800" height="359" alt="image" src="https://github.com/user-attachments/assets/71395f65-5088-4e2e-8c79-032a38124239" />
 <img width="1800" height="736" alt="image" src="https://github.com/user-attachments/assets/cd02b33b-489d-4241-998d-479057436964" />
@@ -236,10 +275,10 @@ JailbreakLab implements different kinds of metrics. JailbreakLab helps you calcu
 
 ### Adding New Metrics
 
-To understand how metrics are added to ``backend/database.py``. We recommend following our work when adding new metrics.
+To understand how metrics are added to `backend/database.py`. We recommend following our work when adding new metrics.
 
 > [!NOTE]
-> There is not a single correct way to add new metrics, but we recommend following our work flow. 
+> There is not a single correct way to add new metrics, but we recommend following our work flow.
 
 ## 🕵️ Detection & Evaluation
 
@@ -672,19 +711,19 @@ npm run lint
 
 ### PAIR configuration
 
-Info: PAIR is currently set to not output any attacks or responses until it finishes. By finishing it outputs the best prompt as well as the score that it got. This can be changed by going to ``backend/attacks/PAIR_attack/main.py`` and uncommenting the flagged lines. In addition it is set to run **10 parallel streams** through **5 iterations**. For good responses the original paper suggests as many streams as possible (for example: 20). This can be altered by changing the ``n_streams`` and ``n_iterations`` variables. Another small note, if you see your target responses being cut off, you can change the call of the ``apply_defense`` function by enlarging the ``max_new_tokens`` (currently set to 1024 for step by step guides essays etc.). Keep in mind altering all of this directly changes the time needed per response as well as how much you spend on your open_ai_key since PAIR uses gpt-4o for judging and attacking.
+Info: PAIR is currently set to not output any attacks or responses until it finishes. By finishing it outputs the best prompt as well as the score that it got. This can be changed by going to `backend/attacks/PAIR_attack/main.py` and uncommenting the flagged lines. In addition it is set to run **10 parallel streams** through **5 iterations**. For good responses the original paper suggests as many streams as possible (for example: 20). This can be altered by changing the `n_streams` and `n_iterations` variables. Another small note, if you see your target responses being cut off, you can change the call of the `apply_defense` function by enlarging the `max_new_tokens` (currently set to 1024 for step by step guides essays etc.). Keep in mind altering all of this directly changes the time needed per response as well as how much you spend on your open_ai_key since PAIR uses gpt-4o for judging and attacking.
 
 ### Crescendo configuration
 
-Info: Crescendo currently outputs only the last response it got. To see how the model was progressing go to ``backend/attacks/Crescendo/crescendo.py`` and uncommenting the labeled yields. Similiar to PAIR, the max new tokens can be changed at the start of the function in generation options as well as how many tries and backtracks it has for better attacking. This all comes at a cost of time and money since this also uses openai gpt-4o as a judge and attacker.
+Info: Crescendo currently outputs only the last response it got. To see how the model was progressing go to `backend/attacks/Crescendo/crescendo.py` and uncommenting the labeled yields. Similiar to PAIR, the max new tokens can be changed at the start of the function in generation options as well as how many tries and backtracks it has for better attacking. This all comes at a cost of time and money since this also uses openai gpt-4o as a judge and attacker.
 
 ### TAP configuration
 
-Info: TAP (Tree of Attacks with Pruning) is configured by default to run with **width=10** (maximum number of prompts to keep after pruning), **depth=10** (maximum tree depth/iterations), and **branching_factor=4** (number of variations generated per prompt). These parameters can be modified in ``backend/attacks/TAP.py`` in the ``run_tap_attack`` function. The attack generates multiple adversarial prompt variations, evaluates them using scoring, and prunes low-performing candidates to focus on the most promising attack paths. Increasing width and depth will improve attack success rates but significantly increases execution time and OpenAI API costs, as TAP uses GPT-4o for both adversarial prompt generation and response evaluation. For faster testing, reduce width and depth to smaller values (e.g., width=5, depth=5). For more aggressive attacks, increase these values along with ``branching_factor``.
+Info: TAP (Tree of Attacks with Pruning) is configured by default to run with **width=10** (maximum number of prompts to keep after pruning), **depth=10** (maximum tree depth/iterations), and **branching_factor=4** (number of variations generated per prompt). These parameters can be modified in `backend/attacks/TAP.py` in the `run_tap_attack` function. The attack generates multiple adversarial prompt variations, evaluates them using scoring, and prunes low-performing candidates to focus on the most promising attack paths. Increasing width and depth will improve attack success rates but significantly increases execution time and OpenAI API costs, as TAP uses GPT-4o for both adversarial prompt generation and response evaluation. For faster testing, reduce width and depth to smaller values (e.g., width=5, depth=5). For more aggressive attacks, increase these values along with `branching_factor`.
 
 ### FCB (Fast and Controllable Bias-Guided) configuration
 
-Info: FCB is configured by default with **prompt_length=35** (length of the adversarial suffix), **iterations=10** (number of optimization steps), and various energy function weights (**alpha1=0.05**, **alpha2=4.0**, **alpha3=1.5**, **omega=6.0**). These parameters can be adjusted in ``backend/attacks/FCB.py`` in the ``run_fcb_attack`` function. The attack uses gradient-based optimization to generate adversarial suffixes guided by a bias towards compliance-inducing keywords. To improve attack success: 1) Increase **iterations** (e.g., 15-20) for more refined optimization, 2) Adjust **prompt_length** (longer prompts may be more effective but slower), 3) Tune the **alpha** weights to balance different components of the energy function (alpha1 for embedding similarity, alpha2 for stop-word penalty, alpha3 for diversity), 4) Modify **omega** to control bias strength toward keywords, and 5) Extend the **keywords list** with domain-specific terms that encourage model compliance. Higher iterations and longer prompts increase GPU memory usage and execution time. The attack outputs the best jailbreak prompt found across all optimization attempts.
+Info: FCB is configured by default with **prompt_length=35** (length of the adversarial suffix), **iterations=10** (number of optimization steps), and various energy function weights (**alpha1=0.05**, **alpha2=4.0**, **alpha3=1.5**, **omega=6.0**). These parameters can be adjusted in `backend/attacks/FCB.py` in the `run_fcb_attack` function. The attack uses gradient-based optimization to generate adversarial suffixes guided by a bias towards compliance-inducing keywords. To improve attack success: 1) Increase **iterations** (e.g., 15-20) for more refined optimization, 2) Adjust **prompt_length** (longer prompts may be more effective but slower), 3) Tune the **alpha** weights to balance different components of the energy function (alpha1 for embedding similarity, alpha2 for stop-word penalty, alpha3 for diversity), 4) Modify **omega** to control bias strength toward keywords, and 5) Extend the **keywords list** with domain-specific terms that encourage model compliance. Higher iterations and longer prompts increase GPU memory usage and execution time. The attack outputs the best jailbreak prompt found across all optimization attempts.
 
 ### Masked Defender configuration
 
@@ -718,12 +757,3 @@ Huge thanks to these papers and projects. Without them, the development of **Jai
 ## ⚠️ Disclaimer
 
 This framework is intended for **educational and research purposes only**. The attack techniques demonstrated should only be used to test and improve the security of AI systems you own or have permission to test. Misuse of these techniques may violate laws and terms of service.
-
-
-
-
-
-
-
-
-
